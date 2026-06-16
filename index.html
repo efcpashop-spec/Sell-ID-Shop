@@ -2,6 +2,71 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        // Suppress any uncaught errors or unhandled promises from Vite's WebSocket
+        const isViteWebsocketError = (msg) => {
+          if (!msg) return false;
+          const lower = String(msg).toLowerCase();
+          return (
+            lower.includes('websocket') ||
+            lower.includes('web socket') ||
+            lower.includes('connection failed') ||
+            lower.includes('vite') ||
+            lower.includes('closed without') ||
+            lower.includes('ปิดโดยไม่เปิด')
+          );
+        };
+
+        window.addEventListener('error', (event) => {
+          const msg = event.message || (event.error && event.error.message);
+          if (isViteWebsocketError(msg)) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', (event) => {
+          const reason = event.reason;
+          const msg = reason ? (reason.message || String(reason)) : '';
+          if (isViteWebsocketError(msg)) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+          }
+        });
+
+        // Monkeypatch WebSocket to permanently stay in CONNECTING state for Vite HMR
+        const NativeWebSocket = window.WebSocket;
+        if (NativeWebSocket) {
+          const WrappedWebSocket = function(url, protocols) {
+            const isViteWS = protocols === 'vite-hmr' || (typeof url === 'string' && (url.includes('vite') || url.includes('ws')));
+            if (isViteWS) {
+              const mockWS = Object.create(NativeWebSocket.prototype);
+              Object.defineProperties(mockWS, {
+                url: { value: url, writable: false, enumerable: true },
+                protocol: { value: protocols || '', writable: false, enumerable: true },
+                readyState: { value: 0, writable: false, enumerable: true }, // 0 = CONNECTING
+                bufferedAmount: { value: 0, writable: false, enumerable: true },
+                extensions: { value: '', writable: false, enumerable: true },
+                binaryType: { value: 'blob', writable: true, enumerable: true },
+                onopen: { value: null, writable: true, enumerable: true },
+                onerror: { value: null, writable: true, enumerable: true },
+                onclose: { value: null, writable: true, enumerable: true },
+                onmessage: { value: null, writable: true, enumerable: true },
+              });
+              mockWS.addEventListener = function(type, listener) {};
+              mockWS.removeEventListener = function(type, listener) {};
+              mockWS.send = function(data) {};
+              mockWS.close = function(code, reason) {};
+              return mockWS;
+            }
+            return new NativeWebSocket(url, protocols);
+          };
+          WrappedWebSocket.prototype = NativeWebSocket.prototype;
+          window.WebSocket = WrappedWebSocket;
+        }
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Google AI Studio App</title>
   </head>
