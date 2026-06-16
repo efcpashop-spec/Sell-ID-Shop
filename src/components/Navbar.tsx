@@ -1,0 +1,591 @@
+import React, { useState } from 'react';
+import { 
+  Gamepad2, 
+  User, 
+  ShieldAlert, 
+  ShieldCheck,
+  CheckCircle2, 
+  Coins, 
+  Menu, 
+  X, 
+  Award, 
+  LogOut,
+  Sliders,
+  Sparkles,
+  CreditCard,
+  Globe,
+  Bell,
+  Home,
+  Lock,
+  Eye,
+  EyeOff,
+  Key
+} from 'lucide-react';
+
+interface NavbarProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  isAdmin: boolean;
+  setIsAdmin: (isAdmin: boolean) => void;
+  userStats: {
+    name: string;
+    creditScore: number;
+    activeContracts: number;
+    walletBalance: number;
+  };
+  onOpenCreditModal: () => void;
+  isUserLoggedIn?: boolean;
+  userEmail?: string;
+  onOpenLoginModal?: () => void;
+  onLogout?: () => void;
+  viewMode?: 'user' | 'admin';
+  setViewMode?: (mode: 'user' | 'admin') => void;
+}
+
+// Highly polished SVG mockup of EF CPA SHOP TOP-UP Logo from the user's uploaded image with customized gold outer frame
+export const EfCpaShopLogo = ({ className = "h-11 w-11" }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 400 400" 
+    className={`${className} rounded-xl shadow-[0_0_15px_rgba(212,175,55,0.45)] group-hover:scale-105 transition-transform shrink-0`}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      {/* 1. Original Deep Textured Purple Background Gradient */}
+      <radialGradient id="originalBgGrad" cx="50%" cy="40%" r="60%">
+        <stop offset="0%" stopColor="#251454" />
+        <stop offset="60%" stopColor="#12082b" />
+        <stop offset="100%" stopColor="#070312" />
+      </radialGradient>
+      
+      {/* 2. Super Luxury Reflective Chrome Gold Gradient for the newly added outer border */}
+      <linearGradient id="luxuryGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fff2ac" />
+        <stop offset="15%" stopColor="#d4af37" />
+        <stop offset="30%" stopColor="#ffec91" />
+        <stop offset="45%" stopColor="#aa820a" />
+        <stop offset="60%" stopColor="#f3c844" />
+        <stop offset="80%" stopColor="#876500" />
+        <stop offset="100%" stopColor="#f7d054" />
+      </linearGradient>
+
+      {/* 3. Original Metallic Shiny Purple Border Frame Gradient */}
+      <linearGradient id="originalPurpleBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#e9d5ff" />
+        <stop offset="20%" stopColor="#ab5cff" />
+        <stop offset="50%" stopColor="#7c26e6" />
+        <stop offset="80%" stopColor="#4c1d95" />
+        <stop offset="100%" stopColor="#c084fc" />
+      </linearGradient>
+
+      {/* 4. Original 'EF' Serif Letters purple gradient */}
+      <linearGradient id="efLettersGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#ab72ff" />
+        <stop offset="45%" stopColor="#8b46ff" />
+        <stop offset="80%" stopColor="#581ca8" />
+        <stop offset="100%" stopColor="#2e0563" />
+      </linearGradient>
+
+      {/* 5. Original 'EF' Outline Gradient (Metallic lilac border around EF) */}
+      <linearGradient id="efOutlineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#e9d5ff" />
+        <stop offset="50%" stopColor="#c084fc" />
+        <stop offset="100%" stopColor="#a855f7" />
+      </linearGradient>
+
+      {/* 6. Controller Gradient */}
+      <linearGradient id="controllerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#c084fc" />
+        <stop offset="50%" stopColor="#8b5cf6" />
+        <stop offset="100%" stopColor="#4c1d95" />
+      </linearGradient>
+
+      {/* 7. Silver Coins & Label Text Metallic Gradient for original look */}
+      <linearGradient id="silverChromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="35%" stopColor="#e2e8f0" />
+        <stop offset="70%" stopColor="#94a3b8" />
+        <stop offset="100%" stopColor="#cbd5e1" />
+      </linearGradient>
+    </defs>
+
+    {/* Outer Rounded Box with Deep Original Background */}
+    <rect x="0" y="0" width="400" height="400" rx="90" fill="url(#originalBgGrad)" />
+
+    {/* A. NEWLY ADDED LUXURY OUTERSIDE GOLD FRAME/BORDER */}
+    <rect x="8" y="8" width="384" height="384" rx="84" fill="none" stroke="url(#luxuryGoldGrad)" strokeWidth="12" />
+    <rect x="14" y="14" width="372" height="372" rx="78" fill="none" stroke="#000000" strokeWidth="2" opacity="0.4" />
+
+    {/* B. ORIGINAL DOUBLE PURPLE METALLIC FRAME */}
+    <rect x="16" y="16" width="368" height="368" rx="76" fill="none" stroke="url(#originalPurpleBorderGrad)" strokeWidth="11" />
+    <rect x="23" y="23" width="354" height="354" rx="69" fill="none" stroke="#000000" strokeWidth="3" opacity="0.5" />
+    <rect x="26" y="26" width="348" height="348" rx="66" fill="none" stroke="url(#originalPurpleBorderGrad)" strokeWidth="3" opacity="0.6" />
+
+    {/* Center Text "EF" - exact original font style & gradient with outer glowing border */}
+    <text 
+      x="198" 
+      y="180" 
+      fontFamily="Georgia, Cambria, 'Times New Roman', Times, serif" 
+      fontSize="144" 
+      fontWeight="900" 
+      fill="url(#efLettersGrad)" 
+      stroke="url(#efOutlineGrad)"
+      strokeWidth="2.5"
+      textAnchor="middle" 
+      filter="drop-shadow(0px 8px 12px rgba(0,0,0,0.9))"
+    >
+      EF
+    </text>
+
+    {/* Gamepad Controller on the left */}
+    <g transform="translate(62, 125) scale(1.18)" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.75))">
+      <path 
+        d="M 12,0 C 5,0 0,5 0,12 C 0,19.5 7,21.5 13.5,21.5 C 17,21.5 19.5,19 22.5,19 C 25.5,19 28,21.5 31.5,21.5 C 38,21.5 45,19.5 45,12 C 45,5 40,0 33,0 Z" 
+        fill="url(#controllerGrad)" 
+        stroke="#ffd54f"
+        strokeWidth="0.5"
+      />
+      <path d="M 6,11 L 8,11 L 8,9 L 10,9 L 10,11 L 12,11 L 12,13 L 10,13 L 10,15 L 8,15 L 8,13 L 6,13 Z" fill="#ffffff" />
+      <circle cx="34" cy="10" r="1.5" fill="#ffffff" />
+      <circle cx="38" cy="14" r="1.5" fill="#ffffff" />
+      <circle cx="38" cy="6" r="1.5" fill="#ffffff" />
+      <circle cx="42" cy="10" r="1.5" fill="#ffffff" />
+    </g>
+
+    {/* Silver Coins on right */}
+    <g transform="translate(290, 115) scale(1.15)" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.75))">
+      <ellipse cx="20" cy="32" rx="18" ry="6.5" fill="url(#silverChromeGrad)" stroke="#090514" strokeWidth="1.5" />
+      <ellipse cx="20" cy="24" rx="18" ry="6.5" fill="url(#silverChromeGrad)" stroke="#090514" strokeWidth="1.5" />
+      <ellipse cx="20" cy="16" rx="18" ry="6.5" fill="url(#silverChromeGrad)" stroke="#090514" strokeWidth="1.5" />
+      <circle cx="21" cy="25" r="5" fill="#000000" opacity="0.3" />
+      <text x="21" y="29.5" fontFamily="'Trebuchet MS', sans-serif" fontSize="13" fontWeight="950" fill="#ffffff" textAnchor="middle">$</text>
+    </g>
+
+    {/* Text Label: CPA SHOP in Silver Chrome Metallic Text with heavy outline & shadow */}
+    <text 
+      x="200" 
+      y="266" 
+      fontFamily="'Trebuchet MS', Montserrat, 'Arial Black', sans-serif" 
+      fontSize="46" 
+      fontWeight="900" 
+      fill="url(#silverChromeGrad)" 
+      stroke="#12082b"
+      strokeWidth="2"
+      textAnchor="middle" 
+      letterSpacing="1.5"
+      filter="drop-shadow(0px 5px 6px rgba(0,0,0,0.95))"
+    >
+      CPA SHOP
+    </text>
+
+    {/* Text Label: TOP-UP centered bottom in small bold clean text */}
+    <text 
+      x="200" 
+      y="324" 
+      fontFamily="'Trebuchet MS', Montserrat, Arial, sans-serif" 
+      fontSize="27" 
+      fontWeight="900" 
+      fill="url(#silverChromeGrad)" 
+      stroke="#070312"
+      strokeWidth="1.2"
+      textAnchor="middle" 
+      letterSpacing="8"
+      filter="drop-shadow(0px 4px 4px rgba(0,0,0,0.9))"
+    >
+      TOP-UP
+    </text>
+  </svg>
+);
+
+export default function Navbar({ 
+  activeTab, 
+  setActiveTab, 
+  isAdmin, 
+  setIsAdmin, 
+  userStats,
+  onOpenCreditModal,
+  isUserLoggedIn = false,
+  userEmail = 'armpunnon@gmail.com',
+  onOpenLoginModal,
+  onLogout,
+  viewMode = 'user',
+  setViewMode
+}: NavbarProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminEmail.trim() === 'chayapol.arm2004@gmail.com' && adminPassword === 'Arm15658') {
+      setIsAdmin(true);
+      setShowAdminLogin(false);
+      setAdminEmail('');
+      setAdminPassword('');
+      setLoginError('');
+    } else {
+      setLoginError('อีเมลหรือรหัสผ่านแอดมินไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+    }
+  };
+
+  const navItems: { id: string; label: string; icon: string; isTrigger?: boolean }[] = [
+    { id: 'home', label: 'หน้าหลักตลาดซื้อขาย', icon: 'home' },
+    { id: 'kyc', label: 'ยืนยันตัวตน (KYC)', icon: 'kyc' },
+    { id: 'payment', label: 'ผ่อนชำระของฉัน', icon: 'payment' }
+  ];
+
+  const renderTabIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'home':
+        return <Home className="h-4 w-4" />;
+      case 'kyc':
+        return <ShieldCheck className="h-4 w-4 text-purple-400 group-hover:scale-110 transition-transform" />;
+      case 'payment':
+        return <CreditCard className="h-4 w-4 text-purple-400 group-hover:scale-110 transition-transform" />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <nav className="sticky top-0 z-45 bg-[#070415]/95 border-b border-purple-950/20 backdrop-blur-md shadow-[0_5px_25px_rgba(0,0,0,0.65)] select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4 xl:px-8">
+        <div className="flex items-center justify-between h-20">
+          
+          {/* Logo & Brand aligned in the top left */}
+          <div 
+            className="flex items-center gap-3 cursor-pointer group shrink-0"
+            onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }}
+            id="brand-logo"
+          >
+            <EfCpaShopLogo className="h-11 w-11 hover:rotate-2 duration-300 border border-[#d4af37]/80 p-[1.5px] bg-[#070415] rounded-xl shadow-[0_0_12px_rgba(212,175,55,0.45)]" />
+            
+            <div className="text-left select-none">
+              <div className="flex flex-col">
+                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white leading-none">
+                  EFCPAShop
+                </span>
+                <span className="text-blue-500 font-black text-[9px] tracking-widest mt-1 uppercase font-mono hidden xl:block">
+                  EFOOTBALL MARKETPLACE
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Center: Desktop Nav Items matching the screenshot */}
+          <div className="hidden md:flex items-center space-x-1 border border-purple-500/10 p-1 bg-[#120b2d] rounded-2xl shrink-0">
+            {navItems.map((item) => {
+              const isActive = item.isTrigger ? false : (activeTab === item.id);
+              
+              return (
+                <button
+                  key={item.id}
+                  id={`nav-item-${item.id}`}
+                  onClick={() => {
+                    if (item.isTrigger) {
+                      onOpenCreditModal();
+                    } else {
+                      setActiveTab(item.id);
+                    }
+                  }}
+                  className={`group px-3 py-2 xl:px-4 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 xl:gap-2 relative ${
+                    isActive 
+                      ? 'text-white bg-purple-600/35 border border-purple-500/30' 
+                      : 'text-slate-350 hover:text-white hover:bg-[#12224d]/40'
+                  }`}
+                >
+                  {renderTabIcon(item.icon)}
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-purple-500 rounded-full blur-[1px]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right: Quick User Panel & Language Selection (TH) & Notification Bell */}
+          <div className="hidden md:flex items-center gap-1.5 xl:gap-3.5 min-w-0 shrink">
+            
+            {/* TH Language indicator capsule */}
+            <div className="flex items-center gap-1.5 border border-purple-950 bg-[#120b2d] text-purple-400 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm shrink-0">
+              <Globe className="h-3.5 w-3.5 text-purple-400" />
+              <span>TH</span>
+            </div>
+
+            {/* Notification Bell option with alert active badge */}
+            <button 
+              onClick={onOpenCreditModal}
+              className="relative p-2 rounded-xl border border-purple-950 bg-[#120b2d] hover:bg-purple-900/10 text-slate-200 transition-all cursor-pointer shadow-sm shrink-0"
+              title="ระบบการแจ้งเตือน"
+            >
+              <Bell className="h-4 w-4 text-slate-200" />
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500 ring-2 ring-[#03091e]" />
+            </button>
+
+            {/* Premium Simulated Account session details widget */}
+            {isUserLoggedIn ? (
+              <div className="flex items-center gap-2.5">
+                <div 
+                  onClick={onOpenCreditModal}
+                  className="flex items-center gap-2 xl:gap-3 pl-1 xl:pl-2 cursor-pointer hover:opacity-90 min-w-0 font-sans"
+                  id="user-credit-box"
+                  title={`สิทธิ์ผู้ใช้: ${userEmail} (คลิกเพื่อขอเพิ่มวงเงิน / ตรวจสอบประวัติ)`}
+                >
+                  <div className="text-right leading-tight select-none min-w-0 block">
+                    <span className="text-xs text-white font-extrabold block truncate max-w-[130px]">
+                      {userEmail}
+                    </span>
+                    <span className="inline-block mt-0.5 text-[8px] bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-md font-extrabold tracking-widest uppercase truncate max-w-full">
+                      CONNECTED
+                    </span>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-[#120b2d] border border-purple-500/20 flex items-center justify-center flex-shrink-0 text-purple-400 shadow-md">
+                    <User className="h-4.5 w-4.5 text-purple-400" />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="p-2 border border-purple-500/10 bg-[#140c31] hover:bg-purple-900/20 text-indigo-400 rounded-xl transition-all cursor-pointer text-xs font-bold shrink-0"
+                  title="ออกจากระบบ"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenLoginModal}
+                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-400 text-white font-black text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(139,92,246,0.3)] animate-pulse hover:animate-none cursor-pointer"
+                id="navbar-login-btn"
+              >
+                <Key className="h-3.5 w-3.5 text-white" />
+                <span>เข้าสู่ระบบ / ยืนยัน OTP</span>
+              </button>
+            )}
+
+            {/* Admin Backoffice controls - ONLY shown if logged in as Admin */}
+            {isAdmin && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                {viewMode === 'user' ? (
+                  <button
+                    onClick={() => setViewMode && setViewMode('admin')}
+                    className="px-3.5 py-2 border border-cyan-500/30 bg-[#08221b] hover:bg-[#0c3127] text-cyan-400 font-extrabold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(16,185,129,0.2)] active:scale-95 duration-205 shrink-0 cursor-pointer"
+                    title="สลับไปยังแผงควบคุมระบบแอดมิน"
+                  >
+                    <Sliders className="h-3.5 w-3.5 text-cyan-400" />
+                    <span>จัดการหลังบ้าน</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setViewMode && setViewMode('user')}
+                    className="px-3.5 py-2 border border-indigo-500/30 bg-[#0c122b] hover:bg-[#121b42] text-indigo-300 font-extrabold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(99,102,241,0.2)] active:scale-95 duration-205 shrink-0 cursor-pointer"
+                    title="กลับไปหน้าแรกของร้านพรีวิว"
+                  >
+                    <Gamepad2 className="h-3.5 w-3.5 text-indigo-400" />
+                    <span>กลับหน้าร้านค้า</span>
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => {
+                    setIsAdmin(false);
+                    if (setViewMode) setViewMode('user');
+                    if (onLogout) onLogout();
+                  }}
+                  id="admin-panel-toggle"
+                  title="ออกจากระบบแอดมิน"
+                  className="flex items-center justify-center border border-red-500/20 bg-[#2b0c16] hover:bg-[#3d0f1e] text-red-400 p-2.5 rounded-xl transition-all duration-200 cursor-pointer shadow-[0_2px_10px_rgba(239,68,68,0.1)] active:scale-95 shrink-0"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile responsive triggers */}
+          <div className="flex items-center gap-2 md:hidden">
+            {isAdmin && (
+              <div className="flex items-center gap-1">
+                {viewMode === 'user' ? (
+                  <button
+                    onClick={() => setViewMode && setViewMode('admin')}
+                    className="p-2 rounded-xl border text-[10px] bg-[#0c2e25] text-emerald-400 border-cyan-500/30 font-black cursor-pointer"
+                  >
+                    สลับหลังบ้าน
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setViewMode && setViewMode('user')}
+                    className="p-2 rounded-xl border text-[10px] bg-[#121c43] text-indigo-300 border-indigo-500/30 font-black cursor-pointer"
+                  >
+                    กลับหน้าร้าน
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setIsAdmin(false);
+                    if (setViewMode) setViewMode('user');
+                    if (onLogout) onLogout();
+                  }}
+                  id="admin-toggle-mobile"
+                  className="p-2 rounded-xl border text-[10px] bg-red-950/60 hover:bg-red-900/60 text-red-400 border-red-500/30 font-black cursor-pointer"
+                  title="ออกจากระบบแอดมิน"
+                >
+                  ออก
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              id="mobile-menu-toggle"
+              className="p-2 text-gray-400 hover:text-white bg-[#070415] border border-purple-950 rounded-lg"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Mobile Drawer menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#070415]/95 backdrop-blur-md border-b border-purple-950/20 px-4 pt-2 pb-5 space-y-3">
+          <div className="space-y-1 text-left">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                id={`mobile-nav-item-${item.id}`}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (item.isTrigger) {
+                    onOpenCreditModal();
+                  } else {
+                    setActiveTab(item.id);
+                  }
+                }}
+                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
+                  activeTab === item.id && !item.isTrigger
+                    ? 'text-white bg-purple-600/35 border-l-4 border-purple-500'
+                    : 'text-gray-300 hover:text-white hover:bg-[#05112e]/50'
+                }`}
+              >
+                {renderTabIcon(item.icon)}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Mobile Stats Summary */}
+          <div className="pt-4 border-t border-purple-950/20 space-y-2 text-left">
+            <div className="flex justify-between items-center bg-[#120b2d]/50 p-2.5 rounded-xl border border-purple-500/10">
+              <span className="text-xs text-slate-400 font-bold">บัญชีผู้ใช้ :</span>
+              <span className="text-xs text-purple-400 font-extrabold">{userStats.name}</span>
+            </div>
+            
+            <div className="flex justify-between items-center bg-[#120b2d]/50 p-2.5 rounded-xl border border-purple-500/10 text-xs">
+              <span className="text-slate-400 font-bold">คะแนนสกอร์หลัก :</span>
+              <span className="text-yellow-400 font-extrabold">{userStats.creditScore}/1000 CG</span>
+            </div>
+
+            <div className="flex justify-between items-center bg-[#120b2d]/50 p-2.5 rounded-xl border border-purple-500/10 text-xs">
+              <span className="text-slate-400 font-bold">วงเงินดาวน์จำลอง :</span>
+              <span className="text-emerald-400 font-extrabold">฿{userStats.walletBalance.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAdminLogin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-sm bg-[#0a0f1d] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl p-6 md:p-8 text-center">
+            {/* Top Close button */}
+            <button
+              type="button"
+              onClick={() => setShowAdminLogin(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800/50 transition-colors cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header Lock Icon & Titles */}
+            <div className="space-y-2 mb-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-2">
+                <Lock className="h-6 w-6 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-bold text-white font-display">ตรวจสอบสิทธิ์แอดมินหลังบ้าน</h3>
+              <p className="text-slate-400 text-xs font-sans font-light">
+                เฉพาะแอดมินที่มีสิทธิ์อนุญาตเท่านั้น กรุณาป้อนคุณสมบัติรหัสลับเพื่อเข้าใช้งาน
+              </p>
+            </div>
+
+            {/* Login form */}
+            <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
+              {/* Email Address */}
+              <div className="space-y-1 text-left">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">อีเมลแอดมิน</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">@</span>
+                  <input
+                    type="email"
+                    required
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="chayapol.arm2004@gmail.com"
+                    className="w-full bg-[#05070e] border border-slate-800 focus:border-indigo-500/70 text-slate-200 p-3 pl-8 rounded-xl text-xs outline-none transition-all placeholder:text-slate-600 font-sans"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1 text-left">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">รหัสผ่านแอดมิน</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    <Key className="h-3.5 w-3.5" />
+                  </span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="ป้อนรหัสแอดมิน..."
+                    className="w-full bg-[#05070e] border border-slate-800 focus:border-indigo-500/70 text-slate-200 p-3 pl-9 pr-10 rounded-xl text-xs outline-none transition-all placeholder:text-slate-600 font-sans"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error messages */}
+              {loginError && (
+                <div className="flex items-start gap-2 bg-red-950/25 border border-red-500/30 p-2.5 rounded-xl">
+                  <ShieldAlert className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                  <span className="text-red-400 text-[10px] leading-relaxed text-left">{loginError}</span>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <button
+                type="submit"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-bold rounded-xl text-xs tracking-wide transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+              >
+                เข้าสู่ระบบตั้งค่าหลังบ้าน
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
