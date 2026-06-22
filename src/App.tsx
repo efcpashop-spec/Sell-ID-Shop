@@ -108,30 +108,57 @@ export default function App() {
 
   // Core Business states (Cached in LocalStorage)
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('efc_products');
-    return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
+    try {
+      const saved = localStorage.getItem('efc_products');
+      return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
+    } catch (e) {
+      console.error('Error parsing efc_products, resetting to default', e);
+      return DEFAULT_PRODUCTS;
+    }
   });
 
   const [applications, setApplications] = useState<InstallmentApplication[]>(() => {
-    const saved = localStorage.getItem('efc_applications');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('efc_applications');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error parsing efc_applications, resetting to empty array', e);
+      return [];
+    }
   });
 
   const [slips, setSlips] = useState<PaymentSlip[]>(() => {
-    const saved = localStorage.getItem('efc_slips');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('efc_slips');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error parsing efc_slips, resetting to empty array', e);
+      return [];
+    }
   });
 
   const [logs, setLogs] = useState<SystemLog[]>(() => {
-    const saved = localStorage.getItem('efc_logs');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', type: 'info', message: 'ระบบจัดการผ่อนชำระสิทธิ์ออนไลน์เริ่มบู๊ทอย่างสมบูรณ์แบบ', timestamp: new Date().toLocaleTimeString() }
-    ];
+    try {
+      const saved = localStorage.getItem('efc_logs');
+      return saved ? JSON.parse(saved) : [
+        { id: '1', type: 'info', message: 'ระบบจัดการผ่อนชำระสิทธิ์ออนไลน์เริ่มบู๊ทอย่างสมบูรณ์แบบ', timestamp: new Date().toLocaleTimeString() }
+      ];
+    } catch (e) {
+      console.error('Error parsing efc_logs', e);
+      return [
+        { id: '1', type: 'info', message: 'ระบบจัดการผ่อนชำระสิทธิ์ออนไลน์เริ่มบู๊ทอย่างสมบูรณ์แบบ', timestamp: new Date().toLocaleTimeString() }
+      ];
+    }
   });
 
   const [collectedCoupons, setCollectedCoupons] = useState<string[]>(() => {
-    const saved = localStorage.getItem('efc_collected_coupons');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('efc_collected_coupons');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error parsing efc_collected_coupons, resetting to empty array', e);
+      return [];
+    }
   });
 
   // Navigation states
