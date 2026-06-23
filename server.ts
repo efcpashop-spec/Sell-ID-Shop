@@ -3,7 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Increase limit to handle slip base64 uploads cleanly
 app.use(express.json({ limit: "20mb" }));
@@ -461,7 +461,7 @@ async function initServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`[OK] eFootball Installment Shop backend is running on http://localhost:${PORT}`);
   });
 }

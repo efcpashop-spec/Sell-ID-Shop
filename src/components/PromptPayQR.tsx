@@ -47,8 +47,32 @@ export default function PromptPayQR({
   
   const qrImageToDisplay = useAlternativeApi ? secondaryQrUrl : primaryQrUrl;
 
+  const copyTextFallback = (text: string): boolean => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      console.warn('Fallback copy failed:', err);
+      return false;
+    }
+  };
+
   const handleCopyText = (text: string, type: 'payee' | 'payload') => {
-    navigator.clipboard.writeText(text);
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).catch(() => copyTextFallback(text));
+    } else {
+      copyTextFallback(text);
+    }
     if (type === 'payee') {
       setIsCopiedText(true);
       setTimeout(() => setIsCopiedText(null as any), 1500);

@@ -409,8 +409,36 @@ export default function App() {
     setLogs(prev => [newLog, ...prev]);
   };
 
+  const copyTextFallback = (text: string): boolean => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      console.warn('Fallback copy failed:', err);
+      return false;
+    }
+  };
+
+  const safeCopyToDevice = (text: string) => {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).catch(() => copyTextFallback(text));
+    } else {
+      copyTextFallback(text);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+    safeCopyToDevice(text);
     setToastMessage(`คัดลอกโค้ด "${text}" สำเร็จแล้ว! นำไปกรอกเปิดใช้งานได้ทันที 🎟️`);
     addLog('success', `คัดลอกรหัสคูปองส่วนลด [${text}] สำเร็จลงสู่อุปกรณ์เรียบร้อย`);
     setTimeout(() => {
@@ -427,7 +455,7 @@ export default function App() {
       } catch (e) {
         console.warn('Unable to write efc_collected_coupons to localStorage', e);
       }
-      navigator.clipboard.writeText(code); // auto copy as convenience too
+      safeCopyToDevice(code); // auto copy as convenience too
       setToastMessage(`🎉 เก็บโค้ด "${code}" สำเร็จแล้ว! สิทธิส่วนลดถูกเพิ่มเข้าไปในคลังสะสมพร้อมเลือกใช้แล้วค่ะ`);
       addLog('success', `กดเก็บคูปองส่วนลด [${code}] ไปยังคลังสะสมส่วนตัวสำเร็จ`);
       setTimeout(() => {
@@ -2164,7 +2192,7 @@ export default function App() {
                               <span className={isTTB ? 'text-blue-105' : isWallet ? 'text-orange-105' : 'text-white'}>{bank.accountNo}</span>
                               <button
                                 onClick={() => {
-                                  navigator.clipboard.writeText(bank.accountNo);
+                                  safeCopyToDevice(bank.accountNo);
                                   alert(`คัดลอกเลขบัญชี ${bank.accountNo} สำเร็จ!`);
                                 }}
                                 className={`font-sans text-[10px] px-2.5 py-0.5 rounded cursor-pointer transition-colors ${

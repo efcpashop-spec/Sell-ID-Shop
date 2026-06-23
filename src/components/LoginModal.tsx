@@ -81,7 +81,9 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
     try {
       const savedProfilesRaw = localStorage.getItem('efc_registered_profiles') || '[]';
       const profiles = JSON.parse(savedProfilesRaw);
-      foundProfile = profiles.find((p: any) => p.email.trim().toLowerCase() === loginEmail.trim().toLowerCase());
+      if (Array.isArray(profiles)) {
+        foundProfile = profiles.find((p: any) => p && p.email && p.email.trim().toLowerCase() === loginEmail.trim().toLowerCase());
+      }
     } catch (err) {
       console.error('Error reading profiles from localStorage', err);
     }
@@ -163,7 +165,15 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
     // Save newly created user dynamically in localStorage for persistence
     try {
       const savedProfiles = localStorage.getItem('efc_registered_profiles') || '[]';
-      const decodedProfiles = JSON.parse(savedProfiles);
+      let decodedProfiles = [];
+      try {
+        const parsed = JSON.parse(savedProfiles);
+        if (Array.isArray(parsed)) {
+          decodedProfiles = parsed;
+        }
+      } catch (e) {
+        // use default empty array
+      }
       decodedProfiles.push({
         email: regEmail,
         password: regPassword,
