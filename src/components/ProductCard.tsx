@@ -46,7 +46,7 @@ function getTieredRate(price: number, weeks: number): number {
 export default function ProductCard({ product, onSelect, onApply }: ProductCardProps) {
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
   const [showCalculator, setShowCalculator] = useState(false);
-  const [selectedWeeks, setSelectedWeeks] = useState(product.minInstallmentWeeks || 8);
+  const [selectedWeeks, setSelectedWeeks] = useState(4);
   const [selectedDownIndex, setSelectedDownIndex] = useState(0);
 
   const prevImage = (e: React.MouseEvent) => {
@@ -81,15 +81,9 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
     ? downPaymentOptions[selectedDownIndex] 
     : currentDownPaymentBase;
 
-  const minW = product.minInstallmentWeeks || 4;
-  const maxW = product.maxInstallmentWeeks || 12;
-  const stepW = Math.max(1, Math.round((maxW - minW) / 3));
-  const weeksOptions = Array.from(new Set([
-    minW,
-    Math.min(maxW, minW + stepW),
-    Math.min(maxW, minW + stepW * 2),
-    maxW
-  ])).sort((a, b) => a - b);
+  const minW = 1;
+  const maxW = 8;
+  const weeksOptions = [1, 2, 3, 4, 5, 6, 7, 8];
 
   // Safe percentage-based calculations with Tiered Profit Configuration
   const remainingAmount = Math.max(0, currentFullPrice - finalDownPayment);

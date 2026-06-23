@@ -326,13 +326,13 @@ export default function ProductDetailModal({
                       </h3>
                       
                       <div className="border border-indigo-500/35 bg-[#12082b] text-indigo-400 text-[10px] sm:text-xs font-mono font-bold px-3 py-1 rounded-full">
-                        1 ถึง 6 สัปดาห์
+                        1 ถึง 8 สัปดาห์
                       </div>
                     </div>
 
                     {/* Weeks buttons (No Slider!) */}
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
-                      {[1, 2, 3, 4, 5, 6].map((wk) => (
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 pt-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((wk) => (
                         <button
                           key={wk}
                           onClick={() => setSelectedWeeks(wk)}

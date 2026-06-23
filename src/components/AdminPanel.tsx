@@ -71,8 +71,8 @@ export default function AdminPanel({
   const [formFullPrice, setFormFullPrice] = useState('12000');
   const [formOriginalPrice, setFormOriginalPrice] = useState('');
   const [formDownPayment, setFormDownPayment] = useState('1200');
-  const [formMinWeeks, setFormMinWeeks] = useState('10');
-  const [formMaxWeeks, setFormMaxWeeks] = useState('30');
+  const [formMinWeeks, setFormMinWeeks] = useState('1');
+  const [formMaxWeeks, setFormMaxWeeks] = useState('8');
   const [formWeekly, setFormWeekly] = useState('450');
   const [formDetails, setFormDetails] = useState('');
 
@@ -106,7 +106,7 @@ export default function AdminPanel({
 
     const calculatedInterestRate = Number(formInterestRate || 5);
     const remainingToPay = priceNum - finalDownPaymentPrice;
-    const weeksToPay = Number(formMinWeeks || 10);
+    const weeksToPay = Number(formMinWeeks || 1);
     const totalWithInterest = remainingToPay * (1 + (calculatedInterestRate / 100));
     const calculatedWeeklyPrice = weeksToPay > 0 ? Math.round(totalWithInterest / weeksToPay) : 150;
 
@@ -236,8 +236,8 @@ export default function AdminPanel({
     setFormFullPrice(String(prod.fullPrice));
     setFormOriginalPrice(prod.originalPrice ? String(prod.originalPrice) : '');
     setFormDownPayment(String(prod.downPayment));
-    setFormMinWeeks(String(prod.minInstallmentWeeks || '10'));
-    setFormMaxWeeks(String(prod.maxInstallmentWeeks || '30'));
+    setFormMinWeeks(String(prod.minInstallmentWeeks || '1'));
+    setFormMaxWeeks(String(prod.maxInstallmentWeeks || '8'));
     setFormWeekly(String(prod.weeklyInstallment || '450'));
     
     // parse details or use defaults to populate eFootball states

@@ -9,8 +9,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
     description: 'ไอดีสายเติมจัดหนัก Collective Strength 3220+ พร้อมใช้งานใน Division 1 สกินนักเตะและตัวละครระดับตำนาน Big Time อัดแน่นเต็มโควต้า ปลดพลังการจัดทีมสูงสุดด้วยยอดผู้จัดการทีมเป๊ป กวาร์ดิโอล่า เวอร์ชันพิเศษ คุมทีมบู๊ได้ทุกแผนการเล่น',
     fullPrice: 12900,
     downPayment: 1900,
-    minInstallmentWeeks: 10,
-    maxInstallmentWeeks: 35,
+    minInstallmentWeeks: 1,
+    maxInstallmentWeeks: 8,
     weeklyInstallment: 350,
     images: [
       'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=crop&q=80',
@@ -36,8 +36,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
     description: 'ไอดีราคาสบายกระเป๋าสำหรับผู้เริ่มตั้งตัวรวมพลังตำนานแนวรุกสุดคลาสสิก แผงหลังแข็งแกร่งอย่าง Maldini และเด่นด้วยกลางรับอัศวินเกราะแดงปืนโต มีเงิน GP สะสมล้นหลามพร้อมนำไปเปิดแพ็คอัปเกรดแผน',
     fullPrice: 4200,
     downPayment: 600,
-    minInstallmentWeeks: 8,
-    maxInstallmentWeeks: 20,
+    minInstallmentWeeks: 1,
+    maxInstallmentWeeks: 8,
     weeklyInstallment: 190,
     images: [
       'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=800&auto=format&fit=crop&q=80',
@@ -63,8 +63,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
     description: 'ตัวเลือกที่ดีที่สุดสำหรับคอบรรยากาศฟุตบอลเอเชียและยุโรป มีการ์ดพรีเมียมเวอร์ชันลิมิเตดที่หาไม่ได้อีกแล้วในซีซันปัจจุบัน ชนะจัดๆ ในโหมดออนไลน์ อัตราความแม่นยำสูง',
     fullPrice: 7550,
     downPayment: 1100,
-    minInstallmentWeeks: 10,
-    maxInstallmentWeeks: 24,
+    minInstallmentWeeks: 1,
+    maxInstallmentWeeks: 8,
     weeklyInstallment: 280,
     images: [
       'https://images.unsplash.com/photo-1518063319789-7217e6706b04?w=800&auto=format&fit=crop&q=80',
@@ -90,8 +90,8 @@ export const DEFAULT_PRODUCTS: Product[] = [
     description: 'เน้นพลังโจมตีโหดร้ายด้วยสุดยอดการยิงฟรีคิกและลูกโหม่งของโรนัลโด้ร่างไอเดียสีขาว มาพร้อมแผงกลางเทพขับเคลื่อน Vieira บดขยี้คู่แข่งให้ราบคาบ สภาพสมบูรณ์แรงก์ประวัติสุดเท่',
     fullPrice: 9500,
     downPayment: 1500,
-    minInstallmentWeeks: 12,
-    maxInstallmentWeeks: 30,
+    minInstallmentWeeks: 1,
+    maxInstallmentWeeks: 8,
     weeklyInstallment: 290,
     images: [
       'https://images.unsplash.com/photo-1579952367143-a006db234e6c?w=800&auto=format&fit=crop&q=80',
