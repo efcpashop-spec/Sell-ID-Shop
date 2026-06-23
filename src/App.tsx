@@ -181,7 +181,7 @@ export default function App() {
   const [appWeeks, setAppWeeks] = useState(12);
   const [appDown, setAppDown] = useState(1000);
   
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean | { defaultAppId: string; defaultPaymentType: 'installment' | 'down' } | null>(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [viewingContractId, setViewingContractId] = useState<string | null>(null);
@@ -205,13 +205,13 @@ export default function App() {
 
   // Secure KYC State management
   const [kycUser, setKycUser] = useState(() => {
-    const saved = localStorage.getItem('efc_kyc_user');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('efc_kyc_user');
+      if (saved) {
         return JSON.parse(saved);
-      } catch (e) {
-        // ignore
       }
+    } catch (e) {
+      console.error('Error reading efc_kyc_user from localStorage', e);
     }
     return {
       isLoggedIn: false,
@@ -237,23 +237,43 @@ export default function App() {
 
   // Synced with LocalStorage
   useEffect(() => {
-    localStorage.setItem('efc_products', JSON.stringify(products));
+    try {
+      localStorage.setItem('efc_products', JSON.stringify(products));
+    } catch (e) {
+      console.warn('Unable to write efc_products to localStorage:', e);
+    }
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem('efc_applications', JSON.stringify(applications));
+    try {
+      localStorage.setItem('efc_applications', JSON.stringify(applications));
+    } catch (e) {
+      console.warn('Unable to write efc_applications to localStorage:', e);
+    }
   }, [applications]);
 
   useEffect(() => {
-    localStorage.setItem('efc_slips', JSON.stringify(slips));
+    try {
+      localStorage.setItem('efc_slips', JSON.stringify(slips));
+    } catch (e) {
+      console.warn('Unable to write efc_slips to localStorage:', e);
+    }
   }, [slips]);
 
   useEffect(() => {
-    localStorage.setItem('efc_logs', JSON.stringify(logs));
+    try {
+      localStorage.setItem('efc_logs', JSON.stringify(logs));
+    } catch (e) {
+      console.warn('Unable to write efc_logs to localStorage:', e);
+    }
   }, [logs]);
 
   useEffect(() => {
-    localStorage.setItem('efc_kyc_user', JSON.stringify(kycUser));
+    try {
+      localStorage.setItem('efc_kyc_user', JSON.stringify(kycUser));
+    } catch (e) {
+      console.warn('Unable to write efc_kyc_user to localStorage:', e);
+    }
     
     // Auto-update userStats' isKycApproved flag
     if (kycUser.status === 'approved' && !userStats.isKycApproved) {
@@ -402,7 +422,11 @@ export default function App() {
     if (!collectedCoupons.includes(code)) {
       const updated = [...collectedCoupons, code];
       setCollectedCoupons(updated);
-      localStorage.setItem('efc_collected_coupons', JSON.stringify(updated));
+      try {
+        localStorage.setItem('efc_collected_coupons', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Unable to write efc_collected_coupons to localStorage', e);
+      }
       navigator.clipboard.writeText(code); // auto copy as convenience too
       setToastMessage(`🎉 เก็บโค้ด "${code}" สำเร็จแล้ว! สิทธิส่วนลดถูกเพิ่มเข้าไปในคลังสะสมพร้อมเลือกใช้แล้วค่ะ`);
       addLog('success', `กดเก็บคูปองส่วนลด [${code}] ไปยังคลังสะสมส่วนตัวสำเร็จ`);
@@ -2905,8 +2929,8 @@ export default function App() {
           applications={isAdmin ? applications : approvedUserApplications}
           onClose={() => setShowPaymentModal(false)}
           onSubmitSlip={handlePaymentSlipSubmit}
-          defaultAppId={typeof showPaymentModal === 'object' ? showPaymentModal.defaultAppId : undefined}
-          defaultPaymentType={typeof showPaymentModal === 'object' ? showPaymentModal.defaultPaymentType : undefined}
+          defaultAppId={typeof showPaymentModal === 'object' && showPaymentModal !== null ? showPaymentModal.defaultAppId : undefined}
+          defaultPaymentType={typeof showPaymentModal === 'object' && showPaymentModal !== null ? showPaymentModal.defaultPaymentType : undefined}
         />
       )}
 
