@@ -51,12 +51,16 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
 
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImgIdx((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+    const imgs = product.images || [];
+    if (imgs.length === 0) return;
+    setCurrentImgIdx((prev) => (prev === 0 ? imgs.length - 1 : prev - 1));
   };
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentImgIdx((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+    const imgs = product.images || [];
+    if (imgs.length === 0) return;
+    setCurrentImgIdx((prev) => (prev === imgs.length - 1 ? 0 : prev + 1));
   };
 
   // Compute discount states based on real product model price differences
@@ -69,13 +73,36 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
   const currentDownPaymentBase = product.downPayment;
   const currentWeeklyInstallmentBase = product.weeklyInstallment;
 
-  // Discrete options for calculators instead of continuous sliders!
-  const downPaymentOptions = Array.from(new Set([
-    currentDownPaymentBase,
-    Math.max(currentDownPaymentBase + 200, Math.round(currentFullPrice * 0.25)),
-    Math.max(currentDownPaymentBase + 500, Math.round(currentFullPrice * 0.40)),
-    Math.max(currentDownPaymentBase + 800, Math.round(currentFullPrice * 0.50))
-  ])).sort((a, b) => a - b);
+  // Discrete options for calculators dynamically configured from admin backend settings!
+  const rawMinDownPct = product.minDownPercent !== undefined 
+    ? product.minDownPercent 
+    : (product.fullPrice > 0 ? Math.round((product.downPayment / product.fullPrice) * 100) : 10);
+  const minDownPct = isNaN(rawMinDownPct) || !isFinite(rawMinDownPct) ? 10 : Math.max(1, Math.min(100, rawMinDownPct));
+
+  const rawMaxDownPct = product.maxDownPercent || 100;
+  const maxDownPct = isNaN(rawMaxDownPct) || !isFinite(rawMaxDownPct) ? 100 : Math.max(minDownPct, Math.min(100, rawMaxDownPct));
+
+  // Generate down payment percentage options dynamically from minDownPct to maxDownPct
+  const downPaymentPctOptions = (() => {
+    const pcts: number[] = [];
+    pcts.push(minDownPct);
+    const firstMultiple = Math.ceil((minDownPct + 1) / 10) * 10;
+    for (let p = firstMultiple; p <= maxDownPct; p += 10) {
+      if (p > minDownPct && p < maxDownPct) {
+        pcts.push(p);
+      }
+      if (pcts.length > 50) break; // Safety break
+    }
+    if (maxDownPct > minDownPct && !pcts.includes(maxDownPct)) {
+      pcts.push(maxDownPct);
+    }
+    return Array.from(new Set(pcts)).sort((a, b) => a - b);
+  })();
+
+  const downPaymentOptions = downPaymentPctOptions.map((pct, idx) => {
+    if (idx === 0) return product.downPayment; // Ensure the first option matches exactly the backend configured amount!
+    return Math.round(currentFullPrice * (pct / 100));
+  });
 
   const finalDownPayment = downPaymentOptions[selectedDownIndex] !== undefined 
     ? downPaymentOptions[selectedDownIndex] 
@@ -168,7 +195,7 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
         )}
 
         <img 
-          src={product.images[currentImgIdx]} 
+          src={(product.images && product.images[currentImgIdx]) || 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=800'} 
           alt={product.title} 
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -192,7 +219,7 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
 
         {/* Carousel Dot Indicators */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 bg-black/40 p-1.5 rounded-full backdrop-blur-sm">
-          {product.images.map((_, i) => (
+          {(product.images || []).map((_, i) => (
             <span 
               key={i} 
               className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImgIdx ? 'bg-purple-500 scale-125' : 'bg-slate-500'}`}
@@ -227,7 +254,7 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
 
         {/* Key specifications highlights */}
         <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/50 mb-3 text-xs">
-          {product.details.slice(0, 2).map((det, index) => (
+          {(product.details || []).slice(0, 2).map((det, index) => (
             <div key={index} className="flex flex-col leading-tight">
               <span className="text-[10px] text-gray-500 font-sans">{det.label}</span>
               <span className="text-slate-300 font-bold truncate mt-0.5 font-sans">{det.value}</span>
@@ -278,7 +305,7 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
               <div className="grid grid-cols-2 gap-1.5">
                 {downPaymentOptions.map((opt, idx) => (
                   <button
-                    key={opt}
+                    key={`${opt}-${idx}`}
                     onClick={() => setSelectedDownIndex(idx)}
                     type="button"
                     className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-all truncate text-center cursor-pointer ${

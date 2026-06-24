@@ -370,7 +370,7 @@ export default function Hero({ onSearch, onExplore, onKycNavigate }: HeroProps) 
               </div>
               <div className="space-y-1">
                 <div className="text-2xl sm:text-3xl font-semibold text-[#a6b6f7] tracking-tight leading-none font-sans">
-                  6 สัปดาห์
+                  8 สัปดาห์
                 </div>
                 <div className="text-[11px] sm:text-xs text-slate-400 font-light tracking-wide font-sans">
                   งวดผ่อนสูงสุดต่อตัว

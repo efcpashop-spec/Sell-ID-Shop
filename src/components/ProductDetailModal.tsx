@@ -50,8 +50,33 @@ export default function ProductDetailModal({
   const [activeMode, setActiveMode] = useState<'installment' | 'full'>('installment');
   
   // Installment configuration states
-  const [downPaymentPct, setDownPaymentPct] = useState(10);
-  const [customDownPayment, setCustomDownPayment] = useState(Math.round(product.fullPrice * 0.10));
+  const rawMinPct = product.minDownPercent !== undefined 
+    ? product.minDownPercent 
+    : (product.fullPrice > 0 ? Math.round((product.downPayment / product.fullPrice) * 100) : 10);
+  const minPct = isNaN(rawMinPct) || !isFinite(rawMinPct) ? 10 : Math.max(1, Math.min(100, rawMinPct));
+
+  const rawMaxPct = product.maxDownPercent || 100;
+  const maxPct = isNaN(rawMaxPct) || !isFinite(rawMaxPct) ? 100 : Math.max(minPct, Math.min(100, rawMaxPct));
+
+  // Generate down payment percentage options dynamically from minPct to maxPct
+  const downPaymentPctOptions = (() => {
+    const pcts: number[] = [];
+    pcts.push(minPct);
+    const firstMultiple = Math.ceil((minPct + 1) / 10) * 10;
+    for (let p = firstMultiple; p <= maxPct; p += 10) {
+      if (p > minPct && p < maxPct) {
+        pcts.push(p);
+      }
+      if (pcts.length > 50) break; // Safety break
+    }
+    if (maxPct > minPct && !pcts.includes(maxPct)) {
+      pcts.push(maxPct);
+    }
+    return Array.from(new Set(pcts)).sort((a, b) => a - b);
+  })();
+
+  const [downPaymentPct, setDownPaymentPct] = useState(minPct);
+  const [customDownPayment, setCustomDownPayment] = useState(product.downPayment);
   const [selectedWeeks, setSelectedWeeks] = useState(4); // Default to 4 weeks like the screenshot!
   
   // Coupon state
@@ -109,7 +134,9 @@ export default function ProductDetailModal({
   // Handler when down payment percentage is clicked
   const handleDownPaymentPctClick = (pct: number) => {
     setDownPaymentPct(pct);
-    const amount = Math.round(product.fullPrice * (pct / 100));
+    const amount = pct === minPct 
+      ? product.downPayment 
+      : Math.round(product.fullPrice * (pct / 100));
     setCustomDownPayment(amount);
   };
 
@@ -118,7 +145,7 @@ export default function ProductDetailModal({
     setCustomDownPayment(val);
     // Find nearest percentage for button highlight
     const estimatedPct = Math.round((val / product.fullPrice) * 10) * 10;
-    if ([10, 20, 30, 40, 50].includes(estimatedPct)) {
+    if (downPaymentPctOptions.includes(estimatedPct)) {
       setDownPaymentPct(estimatedPct);
     } else {
       setDownPaymentPct(0); // Custom selection
@@ -183,7 +210,7 @@ export default function ProductDetailModal({
               {/* Cover Slide Viewports */}
               <div className="relative h-56 sm:h-72 rounded-2xl overflow-hidden border border-purple-500/15 bg-slate-950 shadow-md">
                 <img 
-                  src={product.images[activeImgIdx]} 
+                  src={(product.images && product.images[activeImgIdx]) || 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=800'} 
                   alt={product.title} 
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
@@ -191,13 +218,21 @@ export default function ProductDetailModal({
                 
                 {/* Slide navigations overlay */}
                 <button
-                  onClick={() => setActiveImgIdx((p) => p === 0 ? product.images.length - 1 : p - 1)}
+                  onClick={() => {
+                    const imgs = product.images || [];
+                    if (imgs.length === 0) return;
+                    setActiveImgIdx((p) => p === 0 ? imgs.length - 1 : p - 1);
+                  }}
                   className="absolute left-3.5 top-1/2 -translate-y-1/2 w-8.5 h-8.5 rounded-xl bg-slate-950/80 text-gray-300 hover:text-white border border-slate-900 flex items-center justify-center hover:bg-[#4d3efc] transition-all"
                 >
                   <ChevronLeft className="h-4.5 w-4.5" />
                 </button>
                 <button
-                  onClick={() => setActiveImgIdx((p) => p === product.images.length - 1 ? 0 : p + 1)}
+                  onClick={() => {
+                    const imgs = product.images || [];
+                    if (imgs.length === 0) return;
+                    setActiveImgIdx((p) => p === imgs.length - 1 ? 0 : p + 1);
+                  }}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 w-8.5 h-8.5 rounded-xl bg-slate-950/80 text-gray-300 hover:text-white border border-slate-900 flex items-center justify-center hover:bg-[#4d3efc] transition-all"
                 >
                   <ChevronRight className="h-4.5 w-4.5" />
@@ -210,7 +245,7 @@ export default function ProductDetailModal({
 
               {/* Slide Thumbnails line */}
               <div className="flex gap-2 justify-start overflow-x-auto pb-1 no-scrollbar">
-                {product.images.map((img, idx) => (
+                {(product.images || []).map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImgIdx(idx)}
@@ -229,7 +264,7 @@ export default function ProductDetailModal({
                   <Gamepad className="h-4 w-4" /> คุณสมบัติบัญชีหลักอย่างละเอียด
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 pt-1.5">
-                  {product.details.map((detail, index) => (
+                  {(product.details || []).map((detail, index) => (
                     <div key={index} className="flex flex-col border-b border-purple-900/10 pb-1.5 text-xs">
                       <span className="text-[10px] text-gray-500 font-mono font-bold uppercase">{detail.label}</span>
                       <span className="text-slate-200 font-black truncate mt-0.5">{detail.value}</span>
@@ -294,12 +329,12 @@ export default function ProductDetailModal({
                     </div>
 
                     {/* Percentage buttons selector */}
-                    <div className="grid grid-cols-5 gap-2">
-                       {[10, 20, 30, 40, 50].map((pct) => (
+                    <div className="flex flex-wrap gap-2">
+                      {downPaymentPctOptions.map((pct) => (
                         <button
                           key={pct}
                           onClick={() => handleDownPaymentPctClick(pct)}
-                          className={`py-2 px-1 rounded-xl text-xs font-black font-mono transition-all border ${
+                          className={`py-2 px-3.5 rounded-xl text-xs font-black font-mono transition-all border shrink-0 cursor-pointer ${
                             downPaymentPct === pct
                               ? 'bg-[#4d3efc] border-indigo-400 text-white shadow-[0_0_12px_rgba(77,62,252,0.3)]'
                               : 'bg-[#0d0728] border-purple-950/60 text-slate-300 hover:text-white hover:bg-purple-950/35'

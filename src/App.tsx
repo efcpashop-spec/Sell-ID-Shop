@@ -58,17 +58,6 @@ import {
   QrCode
 } from 'lucide-react';
 
-import { 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend
-} from 'recharts';
-
 const THAI_MONTH_NAMES = [
   'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
   'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
@@ -178,7 +167,7 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
   const [appProduct, setAppProduct] = useState<Product | null>(null);
-  const [appWeeks, setAppWeeks] = useState(12);
+  const [appWeeks, setAppWeeks] = useState(4);
   const [appDown, setAppDown] = useState(1000);
   
   const [showPaymentModal, setShowPaymentModal] = useState<boolean | { defaultAppId: string; defaultPaymentType: 'installment' | 'down' } | null>(false);
