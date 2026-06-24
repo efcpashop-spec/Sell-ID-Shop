@@ -2875,30 +2875,41 @@ export default function App() {
           
           <div className="space-y-3.5">
             <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center">
-                <span className="text-white font-extrabold text-[10px]">EFC</span>
-              </div>
-              <span className="font-extrabold text-white text-base tracking-widest text-[#050608]">EFCPASHOP RENO v2</span>
+              <img 
+                src="/logo.png"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://img2.pic.in.th/47AF4192-FB83-4538-A567-374319D868B1.png";
+                }}
+                alt="EF CPA Shop Logo"
+                className="h-7 w-7 rounded-lg object-contain bg-[#070415] border border-slate-800"
+                referrerPolicy="no-referrer"
+              />
+              <span className="font-extrabold text-white text-base tracking-widest">EF CPA Shop</span>
             </div>
             <p className="text-gray-600 font-sans leading-relaxed text-[11px]">
-              บริการซื้อสิทธิ์ไอดีเกมออนไลน์ ดำเนินผ่อนชำระค่างวดออนไลน์ ไร้คนกู้ ไม่มีค่าเช่าเสริม มาร์เก็ตเพรสเกมอันดับ 1 ของไทย ครอบคลุมการขายสิทธิ์ ROV, Free Fire, PUBG, Genshin, FIFA
+              บริการซื้อสิทธิ์ไอดีเกมออนไลน์ ดำเนินผ่อนชำระค่างวดออนไลน์ ไร้คนกู้ ไม่มีค่าเช่าเสริม มาร์เก็ตเพรสเกม eFootball อันดับ 1 ของไทย ครอบคลุมการขายสิทธิ์ eFootball BY EF CPA Shop
             </p>
           </div>
 
           <div className="space-y-3 font-sans">
             <h4 className="text-slate-300 font-bold text-xs uppercase font-mono tracking-wider">ช่องทางการติดต่ออย่างเป็นทางการ</h4>
             <div className="space-y-2 text-[11px] text-gray-600">
-              <a href="#" className="flex items-center gap-2 hover:text-cyan-400 transition-colors">
+              <a 
+                href="https://web.facebook.com/EFCPAShop" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-2 hover:text-cyan-400 transition-colors"
+              >
                 <Facebook className="h-4 w-4 text-indigo-400" />
-                <span>แฟนเพจ: EFCPAShop - ผ่อนไอดีสิทธิ์แท้ 24 ชั่วโมง</span>
+                <span>แฟนเพจ: EF CPA Shop</span>
               </a>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-cyan-400" />
-                <span>ฝ่ายสนับสนุนสัญญาลายมือ: 088-392-8174</span>
+                <span>เบอร์ติดต่อฉุกเฉิน : 094-820-1166</span>
               </div>
               <div className="flex items-center gap-2">
                 <MessageCircle className="h-4 w-4 text-emerald-400" />
-                <span>แอดไลน์ไอดี: @efcpashop_official</span>
+                <span>แอดไลน์ไอดี: @820tvyqh</span>
               </div>
             </div>
           </div>

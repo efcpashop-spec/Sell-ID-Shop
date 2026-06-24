@@ -42,159 +42,23 @@ interface NavbarProps {
   setViewMode?: (mode: 'user' | 'admin') => void;
 }
 
-// Highly polished SVG mockup of EF CPA SHOP TOP-UP Logo from the user's uploaded image with customized gold outer frame
-export const EfCpaShopLogo = ({ className = "h-11 w-11" }: { className?: string }) => (
-  <svg 
-    viewBox="0 0 400 400" 
-    className={`${className} rounded-xl shadow-[0_0_15px_rgba(212,175,55,0.45)] group-hover:scale-105 transition-transform shrink-0`}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <defs>
-      {/* 1. Original Deep Textured Purple Background Gradient */}
-      <radialGradient id="originalBgGrad" cx="50%" cy="40%" r="60%">
-        <stop offset="0%" stopColor="#251454" />
-        <stop offset="60%" stopColor="#12082b" />
-        <stop offset="100%" stopColor="#070312" />
-      </radialGradient>
-      
-      {/* 2. Super Luxury Reflective Chrome Gold Gradient for the newly added outer border */}
-      <linearGradient id="luxuryGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fff2ac" />
-        <stop offset="15%" stopColor="#d4af37" />
-        <stop offset="30%" stopColor="#ffec91" />
-        <stop offset="45%" stopColor="#aa820a" />
-        <stop offset="60%" stopColor="#f3c844" />
-        <stop offset="80%" stopColor="#876500" />
-        <stop offset="100%" stopColor="#f7d054" />
-      </linearGradient>
+// Highly polished logo loading the requested image, with local slot/path /logo.png and a remote fallback link
+export const EfCpaShopLogo = ({ className = "h-11 w-11" }: { className?: string }) => {
+  const localSrc = "/logo.png";
+  const remoteSrc = "https://img2.pic.in.th/47AF4192-FB83-4538-A567-374319D868B1.png";
 
-      {/* 3. Original Metallic Shiny Purple Border Frame Gradient */}
-      <linearGradient id="originalPurpleBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#e9d5ff" />
-        <stop offset="20%" stopColor="#ab5cff" />
-        <stop offset="50%" stopColor="#7c26e6" />
-        <stop offset="80%" stopColor="#4c1d95" />
-        <stop offset="100%" stopColor="#c084fc" />
-      </linearGradient>
-
-      {/* 4. Original 'EF' Serif Letters purple gradient */}
-      <linearGradient id="efLettersGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#ab72ff" />
-        <stop offset="45%" stopColor="#8b46ff" />
-        <stop offset="80%" stopColor="#581ca8" />
-        <stop offset="100%" stopColor="#2e0563" />
-      </linearGradient>
-
-      {/* 5. Original 'EF' Outline Gradient (Metallic lilac border around EF) */}
-      <linearGradient id="efOutlineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#e9d5ff" />
-        <stop offset="50%" stopColor="#c084fc" />
-        <stop offset="100%" stopColor="#a855f7" />
-      </linearGradient>
-
-      {/* 6. Controller Gradient */}
-      <linearGradient id="controllerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#c084fc" />
-        <stop offset="50%" stopColor="#8b5cf6" />
-        <stop offset="100%" stopColor="#4c1d95" />
-      </linearGradient>
-
-      {/* 7. Silver Coins & Label Text Metallic Gradient for original look */}
-      <linearGradient id="silverChromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#ffffff" />
-        <stop offset="35%" stopColor="#e2e8f0" />
-        <stop offset="70%" stopColor="#94a3b8" />
-        <stop offset="100%" stopColor="#cbd5e1" />
-      </linearGradient>
-    </defs>
-
-    {/* Outer Rounded Box with Deep Original Background */}
-    <rect x="0" y="0" width="400" height="400" rx="90" fill="url(#originalBgGrad)" />
-
-    {/* A. NEWLY ADDED LUXURY OUTERSIDE GOLD FRAME/BORDER */}
-    <rect x="8" y="8" width="384" height="384" rx="84" fill="none" stroke="url(#luxuryGoldGrad)" strokeWidth="12" />
-    <rect x="14" y="14" width="372" height="372" rx="78" fill="none" stroke="#000000" strokeWidth="2" opacity="0.4" />
-
-    {/* B. ORIGINAL DOUBLE PURPLE METALLIC FRAME */}
-    <rect x="16" y="16" width="368" height="368" rx="76" fill="none" stroke="url(#originalPurpleBorderGrad)" strokeWidth="11" />
-    <rect x="23" y="23" width="354" height="354" rx="69" fill="none" stroke="#000000" strokeWidth="3" opacity="0.5" />
-    <rect x="26" y="26" width="348" height="348" rx="66" fill="none" stroke="url(#originalPurpleBorderGrad)" strokeWidth="3" opacity="0.6" />
-
-    {/* Center Text "EF" - exact original font style & gradient with outer glowing border */}
-    <text 
-      x="198" 
-      y="180" 
-      fontFamily="Georgia, Cambria, 'Times New Roman', Times, serif" 
-      fontSize="144" 
-      fontWeight="900" 
-      fill="url(#efLettersGrad)" 
-      stroke="url(#efOutlineGrad)"
-      strokeWidth="2.5"
-      textAnchor="middle" 
-      filter="drop-shadow(0px 8px 12px rgba(0,0,0,0.9))"
-    >
-      EF
-    </text>
-
-    {/* Gamepad Controller on the left */}
-    <g transform="translate(62, 125) scale(1.18)" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.75))">
-      <path 
-        d="M 12,0 C 5,0 0,5 0,12 C 0,19.5 7,21.5 13.5,21.5 C 17,21.5 19.5,19 22.5,19 C 25.5,19 28,21.5 31.5,21.5 C 38,21.5 45,19.5 45,12 C 45,5 40,0 33,0 Z" 
-        fill="url(#controllerGrad)" 
-        stroke="#ffd54f"
-        strokeWidth="0.5"
-      />
-      <path d="M 6,11 L 8,11 L 8,9 L 10,9 L 10,11 L 12,11 L 12,13 L 10,13 L 10,15 L 8,15 L 8,13 L 6,13 Z" fill="#ffffff" />
-      <circle cx="34" cy="10" r="1.5" fill="#ffffff" />
-      <circle cx="38" cy="14" r="1.5" fill="#ffffff" />
-      <circle cx="38" cy="6" r="1.5" fill="#ffffff" />
-      <circle cx="42" cy="10" r="1.5" fill="#ffffff" />
-    </g>
-
-    {/* Silver Coins on right */}
-    <g transform="translate(290, 115) scale(1.15)" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.75))">
-      <ellipse cx="20" cy="32" rx="18" ry="6.5" fill="url(#silverChromeGrad)" stroke="#090514" strokeWidth="1.5" />
-      <ellipse cx="20" cy="24" rx="18" ry="6.5" fill="url(#silverChromeGrad)" stroke="#090514" strokeWidth="1.5" />
-      <ellipse cx="20" cy="16" rx="18" ry="6.5" fill="url(#silverChromeGrad)" stroke="#090514" strokeWidth="1.5" />
-      <circle cx="21" cy="25" r="5" fill="#000000" opacity="0.3" />
-      <text x="21" y="29.5" fontFamily="'Trebuchet MS', sans-serif" fontSize="13" fontWeight="950" fill="#ffffff" textAnchor="middle">$</text>
-    </g>
-
-    {/* Text Label: CPA SHOP in Silver Chrome Metallic Text with heavy outline & shadow */}
-    <text 
-      x="200" 
-      y="266" 
-      fontFamily="'Trebuchet MS', Montserrat, 'Arial Black', sans-serif" 
-      fontSize="46" 
-      fontWeight="900" 
-      fill="url(#silverChromeGrad)" 
-      stroke="#12082b"
-      strokeWidth="2"
-      textAnchor="middle" 
-      letterSpacing="1.5"
-      filter="drop-shadow(0px 5px 6px rgba(0,0,0,0.95))"
-    >
-      CPA SHOP
-    </text>
-
-    {/* Text Label: TOP-UP centered bottom in small bold clean text */}
-    <text 
-      x="200" 
-      y="324" 
-      fontFamily="'Trebuchet MS', Montserrat, Arial, sans-serif" 
-      fontSize="27" 
-      fontWeight="900" 
-      fill="url(#silverChromeGrad)" 
-      stroke="#070312"
-      strokeWidth="1.2"
-      textAnchor="middle" 
-      letterSpacing="8"
-      filter="drop-shadow(0px 4px 4px rgba(0,0,0,0.9))"
-    >
-      TOP-UP
-    </text>
-  </svg>
-);
+  return (
+    <img 
+      src={localSrc}
+      onError={(e) => {
+        (e.target as HTMLImageElement).src = remoteSrc;
+      }}
+      alt="efcpashop.online Logo"
+      referrerPolicy="no-referrer"
+      className={`${className} object-contain transition-all hover:scale-110 shrink-0 bg-[#070415]`}
+    />
+  );
+};
 
 export default function Navbar({ 
   activeTab, 
@@ -265,7 +129,7 @@ export default function Navbar({
             <div className="text-left select-none">
               <div className="flex flex-col">
                 <span className="font-extrabold text-lg sm:text-xl tracking-tight text-white leading-none">
-                  EFCPAShop
+                  EF CPA Shop
                 </span>
                 <span className="text-blue-500 font-black text-[9px] tracking-widest mt-1 uppercase font-mono hidden xl:block">
                   EFOOTBALL MARKETPLACE

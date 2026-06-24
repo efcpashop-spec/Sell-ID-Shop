@@ -1,5 +1,5 @@
 {
-  "name": "eFootball Installment Shop",
+  "name": "efcpashop.online",
   "description": "แพลตฟอร์มผ่อนชำระสิทธิ์ไอดีเกม eFootball (PES) อันดับ 1 ของไทย ตรวจสอบสลิปอัตโนมัติด้วย EasySlip และยืนยัน SMS ผ่าน smsm2pro พร้อมระบบคำนวณค่างวด สัญญาลายมือดิจิทัล และระบบแชทหลังบ้าน",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
