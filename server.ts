@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -247,40 +248,76 @@ app.post("/api/send-sms", async (req, res) => {
     });
   }
 
-  // Real Integration with sms2pro API
+  // Real Integration with sms2pro API with dual URL compatibility
   try {
     logEvent("info", `กำลังเรียกบริการ sms2pro สำหรับส่งข้อความ SMS เครือข่ายไทย...`);
     
-    // Payload for sms2pro API
-    const response = await fetch("https://api.sms2pro.com/v1/sms/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        sender: senderName,
-        recipient: phone,
-        phone: phone,
-        message: message
-      })
-    });
+    let response;
+    let result: any;
+    let isSuccess = false;
 
-    const result: any = await response.json();
+    // Try New Portal Endpoint First
+    try {
+      logEvent("info", `พยายามส่งผ่าน Portal API (portal.sms2pro.com)...`);
+      response = await fetch("https://portal.sms2pro.com/sms-api/sms/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          sender_name: senderName,
+          recipient: phone,
+          message: message
+        })
+      });
+      result = await response.json();
+      isSuccess = 
+        result.status === "success" || 
+        result.success === true || 
+        result.code === "200" || 
+        result.code === 200 ||
+        (result.data && Array.isArray(result.data) && result.data.some((d: any) => d.status === "success"));
+      
+      if (!isSuccess) {
+        logEvent("warn", `Portal API แจ้งผลไม่สำเร็จ: ${JSON.stringify(result)} กำลังลองส่งผ่าน API เก่า...`);
+      }
+    } catch (portalError: any) {
+      logEvent("warn", `เชื่อมต่อ Portal API ล้มเหลว (${portalError.message}) กำลังลองส่งผ่าน API เก่า...`);
+    }
 
-    const isSuccess = 
-      result.status === "success" || 
-      result.success === true || 
-      result.code === "200" || 
-      result.code === 200 ||
-      (result.data && Array.isArray(result.data) && result.data.some((d: any) => d.status === "success"));
+    // If first attempt failed, try the Old API Endpoint
+    if (!isSuccess) {
+      logEvent("info", `พยายามส่งผ่าน API ดั้งเดิม (api.sms2pro.com)...`);
+      response = await fetch("https://api.sms2pro.com/v1/sms/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          sender: senderName,
+          recipient: phone,
+          phone: phone,
+          message: message
+        })
+      });
+      result = await response.json();
+      isSuccess = 
+        result.status === "success" || 
+        result.success === true || 
+        result.code === "200" || 
+        result.code === 200 ||
+        (result.data && Array.isArray(result.data) && result.data.some((d: any) => d.status === "success"));
+    }
 
     if (isSuccess) {
       logEvent("success", `ส่ง SMS ไปยัง ${phone} เรียบร้อย! ผู้ส่ง: ${senderName} เครดิตคงเหลือ: ${result.credit_remaining || (result.data && result.data[0]?.credit_remaining) || "N/A"}`);
       return res.json({ success: true, apiResult: result });
     } else {
-      logEvent("warn", `บริการ sms2pro ส่งไม่สำเร็จ: ${result.message || JSON.stringify(result)}`);
-      return res.status(400).json({ success: false, message: result.message || "ส่ง SMS ล้มเหลว" });
+      logEvent("warn", `บริการ sms2pro ส่งไม่สำเร็จทั้งสองช่องทาง: ${result ? (result.message || JSON.stringify(result)) : "ไม่ทราบสาเหตุ"}`);
+      return res.status(400).json({ success: false, message: result?.message || "ส่ง SMS ล้มเหลว" });
     }
   } catch (error: any) {
     logEvent("error", `เซิร์ฟเวอร์ SMS เชื่อมไม่ติด: ${error.message}`);
