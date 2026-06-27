@@ -510,7 +510,10 @@ export default function App() {
     
     // Automatically open the payment slip modal to make it user friendly!
     setTimeout(() => {
-      setShowPaymentModal(true);
+      setShowPaymentModal({
+        defaultAppId: newApp.id,
+        defaultPaymentType: 'down'
+      });
     }, 400);
   };
 
@@ -538,6 +541,28 @@ export default function App() {
     }
 
     addLog('info', `เอกสารใบโอนสลิปเงินฝากยอด ฿${newSlip.transferAmount.toLocaleString()} ได้รับการยืนยันระบบสำเร็จเสร็จสิ้น`);
+
+    // Call backend API to notify admin via SMS2pro automatically
+    fetch('/api/notify-new-slip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: newSlip.transferAmount,
+        customerName: kycUser.fullName || 'ลูกค้าทั่วไป',
+        productCode: newSlip.productCode || 'EFC-GENERAL'
+      })
+    })
+    .then(async (res) => {
+      if (res.ok) {
+        const data = await res.json();
+        if (data.sent) {
+          addLog('success', `[SMS Alert] ส่งข้อความแจ้งเตือนอัตโนมัติถึงแอดมินผ่าน SMS2pro สำเร็จแล้วค่ะ`);
+        }
+      }
+    })
+    .catch((err) => {
+      console.error('Failed to notify admin via SMS:', err);
+    });
   };
 
   // Filtered & Sorted Products List
@@ -1948,7 +1973,10 @@ export default function App() {
                                   <button
                                     onClick={() => {
                                       // pre-opens standard report slips modal
-                                      setShowPaymentModal(true);
+                                      setShowPaymentModal({
+                                        defaultAppId: app.id,
+                                        defaultPaymentType: 'installment'
+                                      });
                                     }}
                                     className="px-4 py-2 bg-[#05112e] hover:bg-indigo-900 text-cyan-400 border border-cyan-500/20 rounded-lg text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
                                   >
@@ -3040,7 +3068,7 @@ export default function App() {
       {/* MODAL 3: FLOATING REPORT SLIPS */}
       {showPaymentModal && (
         <PaymentReportModal 
-          applications={approvedUserApplications}
+          applications={userApplications.filter(a => a.status !== 'rejected')}
           onClose={() => setShowPaymentModal(false)}
           onSubmitSlip={handlePaymentSlipSubmit}
           defaultAppId={typeof showPaymentModal === 'object' && showPaymentModal !== null ? showPaymentModal.defaultAppId : undefined}

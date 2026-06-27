@@ -25,6 +25,13 @@ let serverLogs: any[] = [
   { id: "init-1", type: "info", message: "เซิร์ฟเวอร์ระบบผ่อน eFootball บูทระบบและเชื่อมต่อฐานข้อมูลไร้ข้อผิดพลาด", timestamp: new Date().toLocaleTimeString() }
 ];
 
+// Admin Automatic SMS Notification Settings
+let adminSmsConfig = {
+  enabled: true,
+  phone: "0897654321",
+  template: "[EFC-SHOP] แจ้งเตือนสลิปใหม่! มีลูกค้าส่งสลิปชำระเงินเข้ามา ยอด ฿{amount} จากคุณ {name} อ้างอิงสัญญา {productCode} โปรดตรวจสอบโดยด่วนค่ะ"
+};
+
 // Helper to push system logs
 function logEvent(type: "info" | "success" | "warn" | "error", message: string) {
   serverLogs.unshift({
@@ -366,6 +373,124 @@ app.post("/api/send-sms", async (req, res) => {
       simulated: false,
       message: `ไม่สามารถส่งข้อความได้เนื่องจากเกตเวย์ขัดข้องหรือเครดิตไม่เพียงพอ: ${lastErrorMsg || "Unknown Error"}` 
     });
+  }
+});
+
+
+// ==== API 3.1: Admin Automatic SMS Alerts Configuration ====
+app.get("/api/admin/sms-config", (req, res) => {
+  res.json({ success: true, config: adminSmsConfig });
+});
+
+app.post("/api/admin/sms-config", (req, res) => {
+  const { enabled, phone, template } = req.body;
+  
+  if (enabled !== undefined) adminSmsConfig.enabled = !!enabled;
+  if (phone !== undefined) adminSmsConfig.phone = String(phone).trim();
+  if (template !== undefined) adminSmsConfig.template = String(template).trim();
+
+  logEvent("info", `แอดมินอัปเดตการแจ้งเตือนสลิปใหม่ SMS: ${adminSmsConfig.enabled ? "เปิด" : "ปิด"} (ส่งแจ้งเตือนไปที่: ${adminSmsConfig.phone})`);
+  res.json({ success: true, config: adminSmsConfig });
+});
+
+// ==== API 3.2: Notify Admin on New Slip Submission ====
+app.post("/api/notify-new-slip", async (req, res) => {
+  const { amount, customerName, productCode } = req.body;
+
+  if (!adminSmsConfig.enabled) {
+    return res.json({ success: true, sent: false, reason: "disabled" });
+  }
+
+  const phone = adminSmsConfig.phone;
+  if (!phone) {
+    return res.status(400).json({ success: false, message: "ไม่ได้กำหนดเบอร์โทรศัพท์แอดมินสำหรับแจ้งเตือน" });
+  }
+
+  // Format the template message
+  const formattedMessage = adminSmsConfig.template
+    .replace(/{amount}/g, Number(amount).toLocaleString())
+    .replace(/{name}/g, String(customerName))
+    .replace(/{productCode}/g, String(productCode));
+
+  const token = getSmsToken();
+  const senderName = process.env.SMS2PRO_SENDER || process.env.SMSM2PRO_SENDER || "EFCPAShop";
+
+  if (!token || token.trim() === "" || token.includes("YOUR_SMS")) {
+    logEvent("error", `ไม่สามารถส่ง SMS แจ้งเตือนแอดมินได้: ไม่พบ API Token ที่ถูกต้อง`);
+    return res.status(400).json({ success: false, message: "ระบบ SMS2PRO ไม่ได้กำหนด API Token" });
+  }
+
+  logEvent("info", `กำลังส่งข้อความเตือนภัย/อัปเดตสลิปไปยังเบอร์แอดมิน ${phone} ด้วยข้อความ: "${formattedMessage}"`);
+
+  const endpoints = [
+    { url: "https://sms-api-prod.sms2pro.com/v1/sms/send", name: "Production Gateway" },
+    { url: "https://portal.sms2pro.com/sms-api/sms/send", name: "Portal Gateway" },
+    { url: "https://api.sms2pro.com/v1/sms/send", name: "Legacy Gateway" }
+  ];
+
+  let isSuccess = false;
+  let lastErrorMsg = "";
+
+  for (const endpoint of endpoints) {
+    try {
+      const payload = {
+        sender: senderName,
+        sender_name: senderName,
+        recipient: phone,
+        phone: phone,
+        message: formattedMessage
+      };
+
+      const response = await fetch(endpoint.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const text = await response.text();
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(text);
+      } catch (err) {
+        lastErrorMsg = `Response not JSON: ${text.substring(0, 50)}`;
+        continue;
+      }
+
+      if (parsed) {
+        const hasSuccessStatus = 
+          parsed.status === "success" || 
+          parsed.success === true || 
+          parsed.code === "200" || 
+          parsed.code === 200 ||
+          parsed.message_id ||
+          (parsed.data && (
+            parsed.data.status === "success" ||
+            parsed.data.success === true ||
+            (Array.isArray(parsed.data) && parsed.data.some((d: any) => d.status === "success" || d.success === true || d.code === 200 || d.code === "200"))
+          ));
+
+        if (hasSuccessStatus) {
+          isSuccess = true;
+          logEvent("success", `ส่ง SMS แจ้งเตือนแอดมินสำเร็จ ผ่านช่องทาง ${endpoint.name}`);
+          break;
+        } else {
+          lastErrorMsg = parsed.message || parsed.error || JSON.stringify(parsed);
+        }
+      }
+    } catch (err: any) {
+      lastErrorMsg = err.message;
+    }
+  }
+
+  if (isSuccess) {
+    return res.json({ success: true, sent: true });
+  } else {
+    logEvent("error", `ส่ง SMS แจ้งเตือนสลิปใหม่ให้แอดมินล้มเหลว: ${lastErrorMsg}`);
+    return res.status(500).json({ success: false, message: lastErrorMsg });
   }
 });
 

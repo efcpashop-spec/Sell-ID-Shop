@@ -166,6 +166,34 @@ export default function AdminPanel({
   const [testSmsPhone, setTestSmsPhone] = useState('0897654321');
   const [testSmsMessage, setTestSmsMessage] = useState('ทดสอบส่งข้อความแจ้งเตือนผ่านเกตเวย์ SMS2pro');
 
+  // Admin Auto Notification SMS Settings States
+  const [adminSmsEnabled, setAdminSmsEnabled] = useState(true);
+  const [adminSmsPhone, setAdminSmsPhone] = useState('0897654321');
+  const [adminSmsTemplate, setAdminSmsTemplate] = useState('[EFC-SHOP] แจ้งเตือนสลิปใหม่! มีลูกค้าส่งสลิปชำระเงินเข้ามา ยอด ฿{amount} จากคุณ {name} อ้างอิงสัญญา {productCode} โปรดตรวจสอบโดยด่วนค่ะ');
+  const [isSavingAdminSms, setIsSavingAdminSms] = useState(false);
+
+  const fetchAdminSmsConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/sms-config');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.config) {
+          setAdminSmsEnabled(data.config.enabled);
+          setAdminSmsPhone(data.config.phone);
+          setAdminSmsTemplate(data.config.template);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load admin SMS configuration:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === 'sms') {
+      fetchAdminSmsConfig();
+    }
+  }, [adminTab]);
+
   // Add Product Form State
   const [showAddForm, setShowAddForm] = useState(false);
   const [editProductId, setEditProductId] = useState<string | null>(null);
@@ -1908,6 +1936,131 @@ export default function AdminPanel({
                 >
                   บันทึกเทมเพลต
                 </button>
+              </div>
+            </div>
+
+            {/* NEW SECTION: ADMIN AUTOMATIC SMS NOTIFICATIONS */}
+            <div className="bg-[#050608] border border-slate-900 p-5 rounded-2xl space-y-4">
+              <h4 className="text-white text-xs font-bold flex items-center gap-1.5 font-sans">
+                <span>🔔 ตั้งค่าระบบส่ง SMS แจ้งเตือนแอดมินอัตโนมัติ (SMS2pro API)</span>
+              </h4>
+              <p className="text-[10px] text-gray-400 -mt-2">เปิดให้ระบบทำการยิงข้อความผ่านคลาวด์ SMS2pro แจ้งแอดมินทางมือถือทันทีเมื่อมีผู้ใช้งานโอนเงินส่งหลักฐาน/ดาวน์/ค่างวดสลิปใหม่</p>
+              
+              <div className="space-y-4">
+                <label className="flex items-start gap-3 cursor-pointer group bg-slate-950/80 p-3.5 rounded-xl border border-slate-850/60 hover:border-purple-500/30 transition-all">
+                  <input 
+                    type="checkbox"
+                    checked={adminSmsEnabled}
+                    onChange={(e) => setAdminSmsEnabled(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-800"
+                  />
+                  <div>
+                    <span className="text-xs text-white font-extrabold block">เปิดใช้งานระบบส่ง SMS แจ้งเตือนอัตโนมัติไปยังเบอร์แอดมิน</span>
+                    <span className="text-[10px] text-gray-500">ระบบจะทำการตรวจสอบข้อมูลในสลิป EasySlip และยิงแจ้งเตือนทันทีที่ตรวจสอบผ่าน</span>
+                  </div>
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1 font-bold font-sans">เบอร์มือถือแอดมินสำหรับรับข้อความแจ้งเตือน (08xxxxxxxx) :</label>
+                    <input 
+                      type="text" 
+                      value={adminSmsPhone}
+                      onChange={(e) => setAdminSmsPhone(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-850 p-2.5 rounded-lg text-xs font-mono text-white outline-none focus:border-purple-500" 
+                      placeholder="เช่น 0897654321" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1 font-bold font-sans">ผู้ส่ง (Sender ID กำหนดโดยเกตเวย์) :</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-slate-950 border border-slate-850 p-2.5 rounded-lg text-xs font-mono text-slate-500" 
+                      disabled
+                      value="EF-SHOP (SMS2pro)" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-gray-500 mb-1 font-bold font-sans">
+                    เทมเพลตข้อความ SMS (รองรับตัวแปรแทรก: <span className="text-purple-400 font-mono font-bold">{"{amount}"}</span>, <span className="text-cyan-400 font-mono font-bold">{"{name}"}</span>, <span className="text-yellow-400 font-mono font-bold">{"{productCode}"}</span>) :
+                  </label>
+                  <textarea
+                    value={adminSmsTemplate}
+                    onChange={(e) => setAdminSmsTemplate(e.target.value)}
+                    className="w-full h-20 bg-slate-950 border border-slate-850 p-2.5 rounded-lg text-xs text-slate-300 font-sans resize-none focus:outline-none focus:border-purple-500"
+                    placeholder="ระบุข้อความเทมเพลต..."
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                  <button 
+                    onClick={async () => {
+                      setIsSavingAdminSms(true);
+                      try {
+                        const response = await fetch('/api/admin/sms-config', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            enabled: adminSmsEnabled,
+                            phone: adminSmsPhone,
+                            template: adminSmsTemplate
+                          })
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                          addLog('success', `บันทึกระบบแจ้งเตือนสัญญาสลิปใหม่ทาง SMS อัตโนมัติ: ${adminSmsEnabled ? 'เปิด' : 'ปิด'} เบอร์แอดมิน: ${adminSmsPhone}`);
+                          alert('💾 บันทึกระบบการตั้งค่าแจ้งเตือน SMS อัตโนมัติของแอดมินสำเร็จเสร็จสิ้น!');
+                        } else {
+                          alert(`เกิดข้อผิดพลาดในการบันทึก: ${result.message}`);
+                        }
+                      } catch (err: any) {
+                        alert(`การบันทึกล้มเหลว: ${err.message}`);
+                      } finally {
+                        setIsSavingAdminSms(false);
+                      }
+                    }}
+                    disabled={isSavingAdminSms}
+                    className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:bg-purple-800 disabled:opacity-50 text-white font-extrabold py-2 px-4 rounded-xl text-xs font-sans transition-all active:scale-95"
+                  >
+                    {isSavingAdminSms ? 'กำลังดำเนินการบันทึก...' : '💾 บันทึกการตั้งค่าการแจ้งเตือนแอดมิน'}
+                  </button>
+                  
+                  <button 
+                    onClick={async () => {
+                      if (!adminSmsPhone.trim()) {
+                        alert('กรุณากรอกเบอร์มือถือแอดมินก่อนค่ะ');
+                        return;
+                      }
+                      addLog('info', `กำลังเรียกยิงทดสอบระบบเตือน SMS จริงผ่าน EasySlip / SMS2pro...`);
+                      try {
+                        const response = await fetch('/api/notify-new-slip', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            amount: 1500,
+                            customerName: 'คุณสมชาย ยอดนับเงิน (ทดสอบสลิปใหม่)',
+                            productCode: 'EFC-TEST-PRODUCT'
+                          })
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                          addLog('success', `[SMS Alert Test] ส่ง SMS ทดสอบสลิปใหม่ไปยังแอดมิน ${adminSmsPhone} สำเร็จแล้ว!`);
+                          alert(`ส่งข้อความจำลองสลิปใหม่สำเร็จจริงทาง SMS!\nเบอร์แอดมิน: ${adminSmsPhone}`);
+                        } else {
+                          alert(`ส่งทดสอบล้มเหลว: ${result.message}`);
+                        }
+                      } catch (err: any) {
+                        alert(`เกิดข้อผิดพลาดในการทดสอบ: ${err.message}`);
+                      }
+                    }}
+                    type="button"
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs border border-slate-800/80 transition-all active:scale-95"
+                  >
+                    🎯 ส่ง SMS แจ้งเตือนจำลองทดสอบ
+                  </button>
+                </div>
               </div>
             </div>
 
