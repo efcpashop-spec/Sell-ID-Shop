@@ -308,6 +308,28 @@ export default function App() {
     fetchUserDashboardStats();
   }, [kycUser.email, kycUser.isLoggedIn]);
 
+  // Synchronize previously registered users from localStorage to the server-side memory DB on app load
+  useEffect(() => {
+    const syncLocalUsersToBackend = async () => {
+      try {
+        const savedProfilesRaw = localStorage.getItem('efc_registered_profiles');
+        if (savedProfilesRaw) {
+          const localUsers = JSON.parse(savedProfilesRaw);
+          if (Array.isArray(localUsers) && localUsers.length > 0) {
+            await fetch('/api/users/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ localUsers })
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync previously registered local users with backend:', err);
+      }
+    };
+    syncLocalUsersToBackend();
+  }, []);
+
   // Robust date parser for app.submittedAt
   const parseAppDate = (submittedAtStr: string) => {
     let baseDate = new Date();

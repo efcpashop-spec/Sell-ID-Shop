@@ -633,6 +633,38 @@ app.get("/api/users", (req, res) => {
   res.json({ success: true, users: serverUserProfiles });
 });
 
+app.post("/api/users/sync", (req, res) => {
+  const { localUsers } = req.body;
+  if (!Array.isArray(localUsers)) {
+    return res.status(400).json({ success: false, message: "Invalid format" });
+  }
+
+  let addedCount = 0;
+  localUsers.forEach(user => {
+    if (!user.email) return;
+    const cleanEmail = user.email.trim().toLowerCase();
+    const exists = serverUserProfiles.some(p => p.email.toLowerCase() === cleanEmail);
+    if (!exists) {
+      serverUserProfiles.push({
+        email: cleanEmail,
+        fullName: (user.fullName || user.name || "").trim(),
+        phone: user.phone || "",
+        password: user.password || "123456",
+        walletBalance: user.walletBalance !== undefined ? Number(user.walletBalance) : 25000,
+        creditScore: user.creditScore !== undefined ? Number(user.creditScore) : 840,
+        creditLimit: user.creditLimit !== undefined ? Number(user.creditLimit) : 50000,
+        isAdmin: cleanEmail === "chayapol.arm2004@gmail.com"
+      });
+      addedCount++;
+    }
+  });
+
+  if (addedCount > 0) {
+    logEvent("info", `ซิงค์ข้อมูลสมาชิกรถย้อนหลังจากเบราว์เซอร์สำเร็จ ${addedCount} ราย`);
+  }
+  res.json({ success: true, syncedCount: addedCount, total: serverUserProfiles.length });
+});
+
 app.post("/api/users/register", (req, res) => {
   const { email, fullName, phone, password } = req.body;
   if (!email || !fullName) {
