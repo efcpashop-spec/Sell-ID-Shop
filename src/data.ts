@@ -117,8 +117,9 @@ export const GAMES_FILTER = [
 ];
 
 export const BANK_ACCOUNTS = [
-  { bankName: 'ธนาคารทหารไทย (TTB)', accountNo: '165-2-54814-8', accountName: 'นายชยพล ปุญนนท์', branch: 'ธุรกรรมหลักสำนักงานใหญ่' },
-  { bankName: 'ทรูมันนี่ วอลเล็ท (TrueMoney Wallet)', accountNo: '094-820-1166', accountName: 'นายชยพล ปุญนนท์', branch: 'อัตโนมัติแจ้งโอน 24 ชั่วโมง' }
+  { bankName: 'ธนาคารทหารไทยธนชาต (ttb)', accountNo: '165-2-54814-8', accountName: 'ชยพล ปุญนนท์ Chayapol Punnon', branch: 'ธุรกรรมหลักสำนักงานใหญ่' },
+  { bankName: 'ทรูมันนี่ วอลเล็ท (TrueMoney Wallet)', accountNo: '094-820-1166', accountName: 'ชยพล ปุญนนท์ Chayapol Punnon', branch: 'อัตโนมัติแจ้งโอน 24 ชั่วโมง' },
+  { bankName: 'พร้อมเพย์ (PromptPay)', accountNo: '1-1004-0120x-xx-x', accountName: 'ชยพล ปุญนนท์ Chayapol Punnon', branch: 'สแกน QR เพื่อความปลอดภัยสูงสุด' }
 ];
 
 export const TESTIMONIALS = [

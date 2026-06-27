@@ -353,8 +353,8 @@ export default function PaymentReportModal({
               <div className="mt-4">
                 <PromptPayQR 
                   amount={baseAmount}
-                  payeeId="0948201166"
-                  payeeName="นายชยพล ปุญนนท์"
+                  payeeId="1100401206065"
+                  payeeName="ชยพล ปุญนนท์ Chayapol Punnon"
                   onAmountChange={(val) => setCustomAmountOverride(val)}
                   allowAdjustAmount={true}
                 />

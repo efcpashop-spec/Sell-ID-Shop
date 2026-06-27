@@ -2248,6 +2248,7 @@ export default function App() {
                       {BANK_ACCOUNTS.map((bank, index) => {
                         const isTTB = bank.bankName.includes('TTB') || bank.bankName.includes('ทหารไทย');
                         const isWallet = bank.bankName.includes('Wallet') || bank.bankName.includes('วอลเล็ท');
+                        const isPromptPay = bank.bankName.includes('PromptPay') || bank.bankName.includes('พร้อมเพย์');
 
                         return (
                           <div 
@@ -2257,7 +2258,9 @@ export default function App() {
                                 ? 'bg-blue-950/25 border-indigo-600/60 shadow-[0_0_10px_rgba(37,99,235,0.15)] hover:border-indigo-400' 
                                 : isWallet 
                                   ? 'bg-amber-950/20 border-orange-500/60 shadow-[0_0_10px_rgba(249,115,22,0.15)] hover:border-orange-400' 
-                                  : 'bg-slate-950 border-slate-900'
+                                  : isPromptPay
+                                    ? 'bg-cyan-950/20 border-cyan-500/60 shadow-[0_0_10px_rgba(6,182,212,0.15)] hover:border-cyan-400'
+                                    : 'bg-slate-950 border-slate-900'
                             }`}
                           >
                             <div className="flex justify-between items-center">
@@ -2265,29 +2268,37 @@ export default function App() {
                                 isTTB ? 'text-blue-300' : isWallet ? 'text-orange-400' : 'text-cyan-400'
                               }`}>{bank.bankName}</span>
                               <span className={`text-[9.5px] font-sans px-1 rounded-full ${
-                                isTTB ? 'bg-blue-500/10 text-blue-400' : isWallet ? 'bg-orange-500/10 text-orange-400' : 'bg-slate-900 text-gray-400'
+                                isTTB 
+                                  ? 'bg-blue-500/10 text-blue-400' 
+                                  : isWallet 
+                                    ? 'bg-orange-500/10 text-orange-400' 
+                                    : 'bg-cyan-500/10 text-cyan-400'
                               }`}>24 ชม.</span>
                             </div>
                             <div className="flex items-center justify-between text-white font-black mt-1 font-mono">
-                              <span className={isTTB ? 'text-blue-105' : isWallet ? 'text-orange-105' : 'text-white'}>{bank.accountNo}</span>
+                              <span className={isTTB ? 'text-blue-100' : isWallet ? 'text-orange-100' : 'text-cyan-200'}>{bank.accountNo}</span>
                               <button
                                 onClick={() => {
-                                  safeCopyToDevice(bank.accountNo);
-                                  alert(`คัดลอกเลขบัญชี ${bank.accountNo} สำเร็จ!`);
+                                  if (isPromptPay) {
+                                    alert('🔒 เพื่อความปลอดภัยส่วนบุคคล (PDPA) ระบบได้ทำการปกปิดเลขบัตรประชาชนพร้อมเพย์เอาไว้ แนะนำให้เซฟรูปภาพคิวอาร์โค้ดสแกนจ่ายแทนเพื่อความสะดวกรวดเร็วและปลอดภัยค่ะ');
+                                  } else {
+                                    safeCopyToDevice(bank.accountNo);
+                                    alert(`คัดลอกเลขบัญชี ${bank.accountNo} สำเร็จ!`);
+                                  }
                                 }}
                                 className={`font-sans text-[10px] px-2.5 py-0.5 rounded cursor-pointer transition-colors ${
                                   isTTB 
                                     ? 'bg-blue-900/60 hover:bg-blue-800 text-blue-200 hover:text-white' 
                                     : isWallet 
                                       ? 'bg-orange-950 hover:bg-orange-900 text-orange-400 hover:text-white' 
-                                      : 'bg-slate-900 text-gray-400 hover:text-white'
+                                      : 'bg-cyan-950 hover:bg-cyan-900 text-cyan-300 hover:text-white'
                                 }`}
                               >
                                 คัดลอก
                               </button>
                             </div>
                             <p className={`text-[10px] truncate max-w-[200px] font-sans ${
-                              isTTB ? 'text-slate-400' : isWallet ? 'text-orange-300' : 'text-slate-400'
+                              isTTB ? 'text-slate-400' : isWallet ? 'text-orange-300' : 'text-cyan-300/80'
                             }`}>ชื่อบัญชี: {bank.accountName}</p>
                           </div>
                         );
@@ -2296,23 +2307,23 @@ export default function App() {
 
                     {/* Compact PromptPay QR Section on the main card */}
                     <div className="pt-3 border-t border-slate-900 flex flex-col sm:flex-row items-center gap-3 text-left">
-                      <div className="relative bg-white p-1.5 rounded-lg flex items-center justify-center shrink-0 w-24 h-24 border border-slate-200">
+                      <div className="relative bg-white p-1.5 rounded-lg flex items-center justify-center shrink-0 w-24 h-24 border border-slate-200 shadow-sm">
                         <img 
-                          src="https://promptpay.io/0948201166.png" 
-                          alt="TrueMoney Wallet PromptPay QR" 
+                          src="https://promptpay.io/1100401206065.png" 
+                          alt="SCB PromptPay QR" 
                           referrerPolicy="no-referrer"
                           className="w-full h-full object-contain"
                         />
-                        <div className="absolute -bottom-1.5 bg-orange-600 text-white font-sans text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow">
+                        <div className="absolute -bottom-1.5 bg-cyan-700 text-white font-sans text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow">
                           PROMPTPAY QR
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10.5px] text-orange-400 font-extrabold flex items-center gap-1">
-                          <QrCode className="h-3 w-3" /> แสกน QR สบายใจกว่า
+                        <p className="text-[10.5px] text-cyan-400 font-extrabold flex items-center gap-1">
+                          <QrCode className="h-3 w-3 animate-pulse" /> สแกน QR ปลอดภัยรวดเร็วสูงสุด
                         </p>
                         <p className="text-[9.5px] text-gray-400 font-sans leading-relaxed">
-                          ใช้แอปธนาคารสแกนเข้า <strong className="text-slate-200">094-820-1166 (นายชยพล ปุญนนท์)</strong> โอนฟรี ไม่มีค่าธรรมเนียม ตรวจสอบผ่าน EasySlip คลังสลิปอัตโนมัติ 24 ชม.
+                          ใช้แอปธนาคารสแกนเข้าพร้อมเพย์ <strong className="text-slate-200">1-1004-0120x-xx-x (ชยพล ปุญนนท์)</strong> โอนฟรี ตรวจสอบความปลอดภัยผ่าน EasySlip อัตโนมัติทันที 24 ชม.
                         </p>
                       </div>
                     </div>

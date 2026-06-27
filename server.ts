@@ -154,12 +154,12 @@ app.post("/api/verify-slip", async (req, res) => {
       // Rule 2: Validate Receiver details
       const receiverName = receiver?.name?.th || receiver?.name?.en || "";
       const receiverAcc = receiver?.account || "";
-      const isCorrectAccount = receiverAcc.includes("1100401206065") || receiverAcc.includes("0948201166");
+      const isCorrectAccount = receiverAcc.includes("1100401206065") || receiverAcc.includes("0948201166") || receiverAcc.includes("1652548148");
       const isCorrectReceiver = receiverName.includes("ชยพล") && (receiverName.includes("ปุณ") || receiverName.includes("ปุญ") || receiverName.includes("ชัยมงคล"));
 
       if (!isCorrectAccount && !isCorrectReceiver) {
         logEvent("error", `ตรวจสอบสลิปผิดพลาด: บัญชีปลายทางไม่ถูกต้อง (${receiverName} - ${receiverAcc})`);
-        return res.status(400).json({ success: false, message: `ตรวจสอบสลิปไม่ผ่าน: บัญชีปลายทางรับเงินไม่ใช่บัญชีร้านค้าที่กำหนด (ต้องชำระเข้าบัญชี นายชยพล ปุณนนท์ / 094-820-1166 หรือ 11-004-01206-06-5 เท่านั้น)` });
+        return res.status(400).json({ success: false, message: `ตรวจสอบสลิปไม่ผ่าน: บัญชีปลายทางรับเงินไม่ใช่บัญชีร้านค้าที่กำหนด (ต้องชำระเข้าบัญชี ชยพล ปุญนนท์ / ttb: 165-2-54814-8, TrueMoney Wallet: 094-820-1166 หรือ PromptPay: 1-1004-0120x-xx-x เท่านั้น)` });
       }
 
       // Rule 3: Anti-duplicate verify transRef checker

@@ -23,7 +23,7 @@ interface PromptPayQRProps {
 
 export default function PromptPayQR({
   amount,
-  payeeId = "0948201166",
+  payeeId = "1100401206065",
   payeeName = "นายชยพล ปุญนนท์",
   onAmountChange,
   allowAdjustAmount = true
@@ -68,10 +68,17 @@ export default function PromptPayQR({
   };
 
   const handleCopyText = (text: string, type: 'payee' | 'payload') => {
+    let copyVal = text;
+    if (type === 'payee' && text.replace(/\D/g, '').length === 13) {
+      // If 13-digit national ID card number, copy the masked string to protect owner's privacy
+      copyVal = formatPayeeId(text);
+      alert('🔒 เพื่อความปลอดภัยส่วนบุคคล (PDPA) ระบบได้ทำการปกปิดเลขบัตรประชาชนพร้อมเพย์เอาไว้ แนะนำให้ใช้แอปพลิเคชันธนาคารสแกนรูปภาพคิวอาร์โค้ดทางซ้ายมือแทนเพื่อความสะดวกและปลอดภัยสูงสุดค่ะ');
+    }
+
     if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-      navigator.clipboard.writeText(text).catch(() => copyTextFallback(text));
+      navigator.clipboard.writeText(copyVal).catch(() => copyTextFallback(copyVal));
     } else {
-      copyTextFallback(text);
+      copyTextFallback(copyVal);
     }
     if (type === 'payee') {
       setIsCopiedText(true);
@@ -104,7 +111,8 @@ export default function PromptPayQR({
       return `${raw.slice(0, 3)}-${raw.slice(3, 6)}-${raw.slice(6)}`;
     }
     if (raw.length === 13) {
-      return `${raw.slice(0, 1)}-${raw.slice(1, 5)}-${raw.slice(5, 10)}-${raw.slice(10, 12)}-${raw.slice(12)}`;
+      // Mask the ID card digits to protect owner's privacy as requested by the user
+      return `${raw.slice(0, 1)}-${raw.slice(1, 5)}-${raw.slice(5, 9)}x-xx-x`;
     }
     return id;
   };
@@ -170,7 +178,7 @@ export default function PromptPayQR({
               <div className="flex items-center justify-between mt-0.5">
                 <p className="text-white text-xs sm:text-sm font-black font-sans">{payeeName}</p>
                 <span className="text-[9.5px] bg-slate-900 border border-slate-800 text-gray-400 px-2 py-0.5 rounded-full font-bold">
-                  {payeeId.replace(/\D/g, '') === "0948201166" ? "ทรูมันนี่ วอลเล็ท / พร้อมเพย์" : "ธ.ทหารไทยธนชาต"}
+                  {payeeId.replace(/\D/g, '').length === 13 ? "พร้อมเพย์ (PromptPay)" : payeeId.replace(/\D/g, '') === "0948201166" ? "ทรูมันนี่ วอลเล็ท" : "ธ.ทหารไทยธนชาต"}
                 </span>
               </div>
             </div>
