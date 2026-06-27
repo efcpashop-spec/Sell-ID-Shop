@@ -358,8 +358,6 @@ export default function App() {
 
   // User Isolated Applications and Slips for Customer Security
   const userApplications = useMemo(() => {
-    if (isAdmin) return applications;
-    
     // If NOT logged in, show applications created in this session but screen out anything else
     if (!kycUser.isLoggedIn) {
       return applications.filter(app => 
@@ -374,17 +372,16 @@ export default function App() {
       app.phone === kycUser.phone ||
       app.nationalId === kycUser.nationalId
     );
-  }, [applications, kycUser, isAdmin]);
+  }, [applications, kycUser]);
 
   const approvedUserApplications = useMemo(() => {
     return userApplications.filter(app => app.status === 'approved');
   }, [userApplications]);
 
   const userSlips = useMemo(() => {
-    if (isAdmin) return slips;
     const appIds = new Set(userApplications.map(a => a.id));
     return slips.filter(s => appIds.has(s.applicationId));
-  }, [slips, userApplications, isAdmin]);
+  }, [slips, userApplications]);
 
   const urgentDueAlerts = useMemo(() => {
     const approvedApps = userApplications.filter(a => a.status === 'approved');
@@ -2998,7 +2995,7 @@ export default function App() {
       {/* MODAL 3: FLOATING REPORT SLIPS */}
       {showPaymentModal && (
         <PaymentReportModal 
-          applications={isAdmin ? applications : approvedUserApplications}
+          applications={approvedUserApplications}
           onClose={() => setShowPaymentModal(false)}
           onSubmitSlip={handlePaymentSlipSubmit}
           defaultAppId={typeof showPaymentModal === 'object' && showPaymentModal !== null ? showPaymentModal.defaultAppId : undefined}
