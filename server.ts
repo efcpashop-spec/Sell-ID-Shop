@@ -540,7 +540,7 @@ let serverUserProfiles: any[] = [
     email: "chayapol.arm2004@gmail.com",
     fullName: "แอดมิน ชยพล",
     phone: "089-765-4321",
-    password: "Admin1234",
+    password: "Arm15658",
     walletBalance: 9999999,
     creditScore: 999,
     creditLimit: 9999999,

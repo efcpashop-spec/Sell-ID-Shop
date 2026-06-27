@@ -3087,6 +3087,8 @@ export default function App() {
         <LoginModal 
           onClose={() => setShowLoginModal(false)}
           onLoginSuccess={(email, name, phone) => {
+            const isUserAdmin = email.trim().toLowerCase() === 'chayapol.arm2004@gmail.com';
+            setIsAdmin(isUserAdmin);
             setKycUser(prev => ({
               ...prev,
               isLoggedIn: true,
@@ -3110,9 +3112,9 @@ export default function App() {
                 email: email,
                 fullName: name,
                 phone: phone,
-                walletBalance: email.trim().toLowerCase() === 'chayapol.arm2004@gmail.com' ? 9999999 : 25000,
-                creditScore: email.trim().toLowerCase() === 'chayapol.arm2004@gmail.com' ? 999 : 840,
-                creditLimit: email.trim().toLowerCase() === 'chayapol.arm2004@gmail.com' ? 9999999 : 50000
+                walletBalance: isUserAdmin ? 9999999 : 25000,
+                creditScore: isUserAdmin ? 999 : 840,
+                creditLimit: isUserAdmin ? 9999999 : 50000
               })
             }).catch(err => console.error('Failed to push profile sync to backend:', err));
           }}
