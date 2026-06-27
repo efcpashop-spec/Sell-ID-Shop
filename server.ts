@@ -530,6 +530,7 @@ let serverUserProfiles: any[] = [
     email: "armpunnon@gmail.com",
     fullName: "ชยพล (Chayapol)",
     phone: "089-765-4321",
+    password: "Arm15658",
     walletBalance: 25000,
     creditScore: 840,
     creditLimit: 50000,
@@ -539,6 +540,7 @@ let serverUserProfiles: any[] = [
     email: "chayapol.arm2004@gmail.com",
     fullName: "แอดมิน ชยพล",
     phone: "089-765-4321",
+    password: "Admin1234",
     walletBalance: 9999999,
     creditScore: 999,
     creditLimit: 9999999,
@@ -624,6 +626,100 @@ app.post("/api/dashboard", (req, res) => {
   }
 
   res.json({ success: true, profile: updatedProfile });
+});
+
+// ==== API 4.6: Admin User Management Endpoints ====
+app.get("/api/users", (req, res) => {
+  res.json({ success: true, users: serverUserProfiles });
+});
+
+app.post("/api/users/register", (req, res) => {
+  const { email, fullName, phone, password } = req.body;
+  if (!email || !fullName) {
+    return res.status(400).json({ success: false, message: "กรุณาระบุข้อมูลที่จำเป็นให้ครบถ้วน" });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const exists = serverUserProfiles.some(p => p.email.toLowerCase() === cleanEmail);
+  if (exists) {
+    return res.status(400).json({ success: false, message: "อีเมลนี้ผ่านการลงทะเบียนในระบบแล้วค่ะ" });
+  }
+
+  const newProfile = {
+    email: cleanEmail,
+    fullName: fullName.trim(),
+    phone: phone || "",
+    password: password || "123456",
+    walletBalance: 25000,
+    creditScore: 840,
+    creditLimit: 50000,
+    isAdmin: cleanEmail === "chayapol.arm2004@gmail.com"
+  };
+
+  serverUserProfiles.push(newProfile);
+  logEvent("success", `สมาชิกใหม่สมัครสำเร็จ: ${newProfile.fullName} (${cleanEmail})`);
+  res.json({ success: true, user: newProfile });
+});
+
+app.post("/api/users/update", (req, res) => {
+  const { originalEmail, email, fullName, phone, password, walletBalance, creditScore, creditLimit, isAdmin } = req.body;
+  
+  if (!originalEmail) {
+    return res.status(400).json({ success: false, message: "กรุณาระบุอีเมลเดิมเพื่อใช้อ้างอิงการแก้ไข" });
+  }
+
+  const idx = serverUserProfiles.findIndex(p => p.email.toLowerCase() === originalEmail.trim().toLowerCase());
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: "ไม่พบข้อมูลสมาชิกรายนี้ในระบบ" });
+  }
+
+  const cleanEmail = (email || originalEmail).trim().toLowerCase();
+  
+  // If email is changing, check if new email is already taken
+  if (cleanEmail !== originalEmail.trim().toLowerCase()) {
+    const isTaken = serverUserProfiles.some(p => p.email.toLowerCase() === cleanEmail);
+    if (isTaken) {
+      return res.status(400).json({ success: false, message: "ไม่สามารถเปลี่ยนเป็นอีเมลนี้ได้เนื่องจากถูกใช้งานแล้ว" });
+    }
+  }
+
+  serverUserProfiles[idx] = {
+    ...serverUserProfiles[idx],
+    email: cleanEmail,
+    fullName: fullName !== undefined ? fullName.trim() : serverUserProfiles[idx].fullName,
+    phone: phone !== undefined ? phone : serverUserProfiles[idx].phone,
+    password: password !== undefined ? password : serverUserProfiles[idx].password,
+    walletBalance: walletBalance !== undefined ? Number(walletBalance) : serverUserProfiles[idx].walletBalance,
+    creditScore: creditScore !== undefined ? Number(creditScore) : serverUserProfiles[idx].creditScore,
+    creditLimit: creditLimit !== undefined ? Number(creditLimit) : serverUserProfiles[idx].creditLimit,
+    isAdmin: isAdmin !== undefined ? !!isAdmin : serverUserProfiles[idx].isAdmin
+  };
+
+  logEvent("info", `แอดมินอัปเดตข้อมูลสมาชิก: ${serverUserProfiles[idx].fullName} (${cleanEmail})`);
+  res.json({ success: true, user: serverUserProfiles[idx] });
+});
+
+app.post("/api/users/delete", (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: "กรุณาระบุอีเมลที่ต้องการลบ" });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  if (cleanEmail === "chayapol.arm2004@gmail.com") {
+    return res.status(400).json({ success: false, message: "ไม่สามารถลบบัญชีผู้ใช้แอดมินหลักได้ค่ะ" });
+  }
+
+  const idx = serverUserProfiles.findIndex(p => p.email.toLowerCase() === cleanEmail);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: "ไม่พบข้อมูลผู้ใช้รายนี้ในระบบ" });
+  }
+
+  const deletedUser = serverUserProfiles[idx];
+  serverUserProfiles = serverUserProfiles.filter(p => p.email.toLowerCase() !== cleanEmail);
+  
+  logEvent("warn", `แอดมินลบผู้ใช้: ${deletedUser.fullName} (${cleanEmail}) ออกจากระบบ`);
+  res.json({ success: true, message: "ลบข้อมูลผู้ใช้งานเรียบร้อยแล้วค่ะ" });
 });
 
 // ==== Server side in-memory endpoints for applications (keeps them synced without file write mistakes) ====

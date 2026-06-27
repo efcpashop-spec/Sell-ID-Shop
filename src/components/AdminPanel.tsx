@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, InstallmentApplication, PaymentSlip, SystemLog } from '../types';
 import { 
   Trash2, 
@@ -57,6 +57,112 @@ export default function AdminPanel({
   setKycUser
 }: AdminPanelProps) {
   const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'slips' | 'sms' | 'kyc' | 'applications' | 'installments' | 'users'>('dashboard');
+  
+  // User Management states
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+
+  const [editUserFullName, setEditUserFullName] = useState('');
+  const [editUserEmail, setEditUserEmail] = useState('');
+  const [editUserPhone, setEditUserPhone] = useState('');
+  const [editUserPassword, setEditUserPassword] = useState('');
+  const [editUserWalletBalance, setEditUserWalletBalance] = useState(25000);
+  const [editUserCreditScore, setEditUserCreditScore] = useState(840);
+  const [editUserCreditLimit, setEditUserCreditLimit] = useState(50000);
+  const [editUserIsAdmin, setEditUserIsAdmin] = useState(false);
+
+  const fetchUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.users)) {
+        setUsersList(data.users);
+      }
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  const handleOpenEditUser = (user: any) => {
+    setEditingUser(user);
+    setEditUserFullName(user.fullName || '');
+    setEditUserEmail(user.email || '');
+    setEditUserPhone(user.phone || '');
+    setEditUserPassword(user.password || '');
+    setEditUserWalletBalance(user.walletBalance !== undefined ? user.walletBalance : 25000);
+    setEditUserCreditScore(user.creditScore !== undefined ? user.creditScore : 840);
+    setEditUserCreditLimit(user.creditLimit !== undefined ? user.creditLimit : 50000);
+    setEditUserIsAdmin(!!user.isAdmin);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    try {
+      const response = await fetch('/api/users/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalEmail: editingUser.email,
+          email: editUserEmail,
+          fullName: editUserFullName,
+          phone: editUserPhone,
+          password: editUserPassword,
+          walletBalance: editUserWalletBalance,
+          creditScore: editUserCreditScore,
+          creditLimit: editUserCreditLimit,
+          isAdmin: editUserIsAdmin
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        addLog('success', `อัปเดตสิทธิ์และสเปคของสมาชิก ${editUserFullName} เรียบร้อยแล้วค่ะ`);
+        setEditingUser(null);
+        fetchUsers();
+      } else {
+        alert(`เกิดข้อผิดพลาด: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Failed to update user:', err);
+      alert('ไม่สามารถอัปเดตข้อมูลลูกค้าได้ค่ะ');
+    }
+  };
+
+  const handleDeleteUser = async (email: string, name: string) => {
+    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลสมาชิกของคุณ ${name} (${email}) ออกจากระบบอย่างถาวร?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      if (data.success) {
+        addLog('warn', `แอดมินทำการลบผู้ใช้ ${name} (${email}) ออกจากฐานสัญญากลางแล้วค่ะ`);
+        fetchUsers();
+      } else {
+        alert(`เกิดข้อผิดพลาด: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Failed to delete user:', err);
+      alert('ไม่สามารถลบผู้ใช้งานได้ค่ะ');
+    }
+  };
+
+  useEffect(() => {
+    if (adminTab === 'users') {
+      fetchUsers();
+    }
+  }, [adminTab]);
+
   const [testSmsPhone, setTestSmsPhone] = useState('0897654321');
   const [testSmsMessage, setTestSmsMessage] = useState('ทดสอบส่งข้อความแจ้งเตือนผ่านเกตเวย์ SMS2pro');
 
@@ -1975,90 +2081,231 @@ export default function AdminPanel({
         {/* TAB 8: USERS DIRECTORY */}
         {adminTab === 'users' && (
           <div className="space-y-6 text-left animate-fadeIn">
-            <div>
-              <h3 className="text-white font-extrabold text-sm sm:text-base">ข้อมูลสมาชิกและประวัติการรับวงเงิน</h3>
-              <p className="text-[11px] text-gray-400 mt-1">รายชื่อฐานผู้ซื้อที่ผ่านการยืนยันตัวตน มีเครดิตบูสต์และประวัติยื่นใบขอผ่อนสัญญากลาง</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-white font-extrabold text-sm sm:text-base">ข้อมูลสมาชิกและประวัติการรับวงเงิน</h3>
+                <p className="text-[11px] text-gray-400 mt-1">ฐานข้อมูลผู้ซื้อจริงที่ผูกมัดสัญญาผ่านเกตเวย์ OTP และทำการควบคุม KYC ประวัติแบบผ่อนกลาง</p>
+              </div>
+              <button
+                onClick={fetchUsers}
+                className="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-indigo-400 font-bold py-1.5 px-3 rounded-lg text-xs transition-colors shrink-0 flex items-center gap-1.5"
+              >
+                🔄 ดึงข้อมูลล่าสุด
+              </button>
             </div>
 
             <div className="bg-[#050608] border border-slate-850 rounded-2xl overflow-hidden">
               <div className="p-4 bg-slate-950/80 border-b border-slate-900 flex justify-between items-center">
-                <span className="text-xs text-slate-400 font-mono">ค้นพบทั้งหมด 3 ลูกค้าในฐานระบบจำลอง</span>
-                <span className="text-[10px] text-indigo-400 font-mono">วงเงินสูงสุดกำหนดไว้ที่ ฿50,000 ต่อราย</span>
+                <span className="text-xs text-slate-400 font-mono">ค้นพบทั้งหมด {usersList.length} ลูกค้าในระบบคลาวด์</span>
+                <span className="text-[10px] text-indigo-400 font-mono">สามารถแก้ไข รหัสผ่าน/วงเงิน/เบอร์โทร หรือลบสมาชิกได้จากส่วนนี้</span>
               </div>
 
-              <div className="divide-y divide-slate-900">
-                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <h5 className="text-white font-bold text-sm">คุณ {kycUser.fullName || 'ผู้ทดสอบระบบคลาวด์'}</h5>
-                    <div className="flex items-center gap-3 text-[10px] text-gray-500 font-mono">
-                      <span>เบอร์ติดต่อ: {kycUser.phone || '0897654321'}</span>
-                      <span>เลขบัตร: {kycUser.nationalId || '1209900234551'}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right font-mono">
-                      <span className="text-[10px] text-gray-500 block">เกรดเครดิตบูโร :</span>
-                      <span className="text-emerald-400 font-bold text-xs">อนุมัติระดับ A (Verified)</span>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        const score = prompt('ปรับเปลี่ยนคะแนนเครดิต (600 - 1000):', '850');
-                        if (score) {
-                          addLog('success', `อัปเดตเกรดคะแนนเป็น ${score} สำหรับ ${kycUser.fullName || 'ผู้ยื่นแบบ'} เรียบร้อย`);
-                          alert(`เครดิตสกอร์ถูกปรับเป็น ${score} แล้ว!`);
-                        }
-                      }}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
-                    >
-                      ปรับเปลี่ยนสเปค
-                    </button>
-                  </div>
+              {isLoadingUsers ? (
+                <div className="p-12 text-center text-slate-500 font-sans text-xs flex flex-col items-center gap-3">
+                  <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span>กำลังดึงรายชื่อลูกค้าอย่างปลอดภัย...</span>
                 </div>
+              ) : usersList.length === 0 ? (
+                <div className="p-12 text-center text-slate-500 font-sans text-xs">
+                  <span>ไม่พบข้อมูลรายชื่อสมาชิกในระบบ</span>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-900">
+                  {usersList.map((user, idx) => (
+                    <div key={user.email || idx} className="p-4.5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-900/10 transition-colors">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <h5 className="text-white font-bold text-sm">คุณ {user.fullName || 'ผู้ใช้งานทั่วไป'}</h5>
+                          {user.isAdmin && (
+                            <span className="bg-rose-500/15 text-rose-400 border border-rose-500/20 text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                              แอดมิน (Admin)
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-[11px] text-slate-400 font-mono">
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">อีเมล (ID):</span>
+                            <span className="text-white">{user.email}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">เบอร์มือถือ:</span>
+                            <span className="text-white">{user.phone || 'ยังไม่ได้ตั้ง'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">รหัสผ่าน:</span>
+                            <span className="text-indigo-300 font-bold bg-indigo-950/40 px-1 py-0.2 rounded border border-indigo-500/10">{user.password}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">ยอดเงินในกระเป๋า:</span>
+                            <span className="text-emerald-400 font-extrabold">฿{(user.walletBalance || 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <h5 className="text-white font-bold text-sm">คุณ ณัฐดนัย สมประสงค์</h5>
-                    <div className="flex items-center gap-3 text-[10px] text-gray-500 font-mono">
-                      <span>เบอร์ติดต่อ: 0812234059</span>
-                      <span>เลขบัตร: 3209800112459</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right font-mono">
-                      <span className="text-[10px] text-gray-500 block">เกรดเครดิตบูโร :</span>
-                      <span className="text-yellow-500 font-bold text-xs">ระดับ B (มีสัญญากลาง)</span>
-                    </div>
-                    <button 
-                      onClick={() => alert('แก้ไขข้อมูลลูกค้า ณัฐดนัย')}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
-                    >
-                      ปรับเปลี่ยนสเปค
-                    </button>
-                  </div>
-                </div>
+                      <div className="flex flex-wrap items-center gap-3.5 pt-2 md:pt-0 border-t border-slate-900/40 md:border-t-0">
+                        <div className="text-left md:text-right font-mono">
+                          <span className="text-[10px] text-slate-500 block">เครดิตสกอร์ / ลิมิต :</span>
+                          <div className="text-xs">
+                            <span className="text-amber-400 font-bold">{user.creditScore || 840} แต้ม</span>
+                            <span className="text-slate-500 mx-1">/</span>
+                            <span className="text-indigo-400 font-bold">฿{(user.creditLimit || 50000).toLocaleString()}</span>
+                          </div>
+                        </div>
 
-                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <h5 className="text-white font-bold text-sm">คุณ ยศพล รุกเด็จไทย</h5>
-                    <div className="flex items-center gap-3 text-[10px] text-gray-500 font-mono">
-                      <span>เบอร์ติดต่อ: 0954032128</span>
-                      <span>เลขบัตร: 1104800673412</span>
+                        <div className="flex gap-2 shrink-0">
+                          <button 
+                            onClick={() => handleOpenEditUser(user)}
+                            className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center gap-1"
+                          >
+                            ✏️ แก้ไขข้อมูล
+                          </button>
+                          {user.email !== 'chayapol.arm2004@gmail.com' && (
+                            <button 
+                              onClick={() => handleDeleteUser(user.email, user.fullName)}
+                              className="bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 font-bold py-1.5 px-2.5 rounded-lg text-xs transition-colors"
+                              title="ลบผู้ใช้นี้ถาวร"
+                            >
+                              🗑️ ลบ
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right font-mono">
-                      <span className="text-[10px] text-gray-500 block">เกรดเครดิตบูโร :</span>
-                      <span className="text-gray-500 font-bold text-xs">ยังไม่ยื่น KYC</span>
-                    </div>
-                    <button 
-                      onClick={() => alert('แก้ไขข้อมูลลูกค้า ยศพล')}
-                      className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-xs"
-                    >
-                      ปรับเปลี่ยนสเปค
-                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic Modal Dialog for Editing User Spec */}
+        {editingUser && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+            <div className="w-full max-w-[460px] bg-[#0c0d16] border border-indigo-950 rounded-2xl shadow-2xl overflow-hidden animate-scaleUp text-left">
+              <div className="p-4 bg-[#0a0b12] border-b border-indigo-950/50 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">✏️</span>
+                  <div>
+                    <h4 className="text-white font-bold text-sm">แก้ไขสิทธิ์และสเปคสมาชิก</h4>
+                    <p className="text-[10px] text-gray-400">แก้ไขข้อมูล บัญชี/รหัสผ่าน/วงเงิน ของคู่สัญญากลาง</p>
                   </div>
                 </div>
+                <button 
+                  onClick={() => setEditingUser(null)}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
+
+              <form onSubmit={handleUpdateUser} className="p-4.5 space-y-3.5">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">ชื่อ-นามสกุลจริงตามบัตรประชาชน</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editUserFullName}
+                    onChange={(e) => setEditUserFullName(e.target.value)}
+                    className="w-full bg-[#05060a] border border-slate-800 p-2.5 rounded-xl text-white outline-none text-xs focus:border-indigo-500 transition-colors font-sans"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">อีเมลที่ใช้ลงทะเบียน (Email)</label>
+                    <input 
+                      type="email" 
+                      required
+                      value={editUserEmail}
+                      onChange={(e) => setEditUserEmail(e.target.value)}
+                      className="w-full bg-[#05060a] border border-slate-800 p-2.5 rounded-xl text-white outline-none text-xs focus:border-indigo-500 transition-colors font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">เบอร์มือถือเชื่อมต่อ OTP</label>
+                    <input 
+                      type="text" 
+                      value={editUserPhone}
+                      onChange={(e) => setEditUserPhone(e.target.value)}
+                      className="w-full bg-[#05060a] border border-slate-800 p-2.5 rounded-xl text-white outline-none text-xs focus:border-indigo-500 transition-colors font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">รหัสผ่านเข้าสู่ระบบ (Password)</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editUserPassword}
+                    onChange={(e) => setEditUserPassword(e.target.value)}
+                    className="w-full bg-[#05060a] border border-slate-800 p-2.5 rounded-xl text-indigo-300 outline-none text-xs focus:border-indigo-500 transition-colors font-mono font-bold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">ยอดเงินกระเป๋า (฿)</label>
+                    <input 
+                      type="number" 
+                      required
+                      value={editUserWalletBalance}
+                      onChange={(e) => setEditUserWalletBalance(Number(e.target.value))}
+                      className="w-full bg-[#05060a] border border-slate-800 p-2 rounded-xl text-emerald-400 outline-none text-xs focus:border-indigo-500 transition-colors font-mono font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">เครดิตสกอร์ (แต้ม)</label>
+                    <input 
+                      type="number" 
+                      required
+                      min={100}
+                      max={1000}
+                      value={editUserCreditScore}
+                      onChange={(e) => setEditUserCreditScore(Number(e.target.value))}
+                      className="w-full bg-[#05060a] border border-slate-800 p-2 rounded-xl text-amber-400 outline-none text-xs focus:border-indigo-500 transition-colors font-mono font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">วงเงินจำกัด (฿)</label>
+                    <input 
+                      type="number" 
+                      required
+                      value={editUserCreditLimit}
+                      onChange={(e) => setEditUserCreditLimit(Number(e.target.value))}
+                      className="w-full bg-[#05060a] border border-slate-800 p-2 rounded-xl text-indigo-400 outline-none text-xs focus:border-indigo-500 transition-colors font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-gray-300 hover:text-white">
+                    <input 
+                      type="checkbox"
+                      checked={editUserIsAdmin}
+                      onChange={(e) => setEditUserIsAdmin(e.target.checked)}
+                      className="rounded border-slate-800 text-indigo-600 bg-slate-950 focus:ring-indigo-500 focus:ring-opacity-50 h-4.5 w-4.5"
+                    />
+                    <span className="font-bold">แต่งตั้งเป็นผู้ดูแลระบบ (Admin Role)</span>
+                  </label>
+                </div>
+
+                <div className="pt-4 border-t border-indigo-950/50 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-2 px-4 rounded-xl text-xs transition-colors cursor-pointer"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-5 rounded-xl text-xs transition-colors cursor-pointer shadow-md hover:shadow-indigo-500/20 active:scale-95"
+                  >
+                    บันทึกข้อมูลสมาชิก
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

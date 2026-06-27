@@ -55,7 +55,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
     setLoginPassword('Arm15658');
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.includes('@')) {
       setLoginError('กรุณากรอกรูปแบบอีเมลคู่สัญญาให้ถูกต้องค่ะ');
@@ -66,19 +66,27 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
       return;
     }
 
-    // Check if it is the admin
-    if (loginEmail.trim() === 'chayapol.arm2004@gmail.com' && loginPassword === 'Arm15658') {
-      onLoginSuccess(loginEmail, 'แอดมิน ชยพล', '089-765-4321');
-      return;
+    // 1. Try checking backend users first
+    try {
+      const response = await fetch('/api/users');
+      const data = await response.json();
+      if (data.success && Array.isArray(data.users)) {
+        const found = data.users.find((u: any) => u.email.trim().toLowerCase() === loginEmail.trim().toLowerCase());
+        if (found) {
+          if (found.password === loginPassword) {
+            onLoginSuccess(found.email, found.fullName, found.phone);
+            return;
+          } else {
+            setLoginError('รหัสผ่านที่คุณป้อนไม่ถูกต้อง กรุณาตรวจสอบอีกครั้งค่ะ');
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching users from backend', err);
     }
 
-    // Check if it is the default demo user
-    if (loginEmail.trim() === 'armpunnon@gmail.com' && loginPassword === 'Arm15658') {
-      onLoginSuccess(loginEmail, 'ชยพล (Chayapol)', '089-765-4321');
-      return;
-    }
-
-    // Check if it matches any registered profiles from localStorage
+    // 2. Check if it matches any registered profiles from localStorage (fallback)
     let foundProfile = null;
     try {
       const savedProfilesRaw = localStorage.getItem('efc_registered_profiles') || '[]';
@@ -167,7 +175,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regFullName.trim()) {
       alert('กรุณากรอก ชื่อ-นามสกุลจริงตามบัตรประชาชน เพื่อควบคุม KYC ด้วยค่ะ');
@@ -184,6 +192,26 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
     if (regPassword.length < 4) {
       alert('กรุณาตั้งรหัสผ่านสำหรับใช้งานอย่างน้อย 4 ตัวขึ้นไปค่ะ');
       return;
+    }
+
+    try {
+      const response = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: regEmail,
+          fullName: regFullName,
+          phone: regPhone,
+          password: regPassword
+        })
+      });
+      const result = await response.json();
+      if (!result.success) {
+        alert(`ลงทะเบียนล้มเหลว: ${result.message}`);
+        return;
+      }
+    } catch (err: any) {
+      console.error('Error registering with backend:', err);
     }
 
     // Save newly created user dynamically in localStorage for persistence
@@ -472,36 +500,73 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
 
                   {/* Dynamic OTP validation pin block if requested */}
                   {otpSent && (
-                    <div className="bg-[#080a14] border border-indigo-500/20 p-3.5 rounded-xl space-y-2.5 animate-scaleUp text-left">
-                      <div className="flex justify-between items-center text-[10px] font-sans">
-                        <span className="text-slate-400 font-bold">ป้อนรหัส 6 หลักความปลอดภัยที่ส่งไปทาง SMS:</span>
+                    <div className="bg-[#0b0c16] border border-indigo-500/30 p-4.5 rounded-xl space-y-3.5 shadow-[0_4px_25px_rgba(99,102,241,0.12)] animate-scaleUp text-left relative overflow-hidden">
+                      {/* Decorative backdrop glow */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                      
+                      <div className="flex justify-between items-center text-[11px]">
+                        <span className="text-indigo-300 font-extrabold flex items-center gap-1.5 uppercase tracking-wider">
+                          <LockKeyhole className="h-3.5 w-3.5 text-indigo-400" />
+                          ป้อนรหัสยืนยันตัวตน SMS
+                        </span>
+                        {otpRefCode && (
+                          <span className="bg-indigo-950/80 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded font-mono font-bold text-[9px] uppercase tracking-wider">
+                            Ref: {otpRefCode}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text"
-                          maxLength={6}
-                          placeholder="กรอกรหัสผ่าน OTP 6 ตัว..."
-                          value={otpInput}
-                          onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
-                          className="flex-grow bg-slate-950 border border-slate-800 p-2 text-center text-white outline-none font-mono text-sm tracking-[0.25em] focus:border-indigo-500"
-                        />
+                      
+                      <div className="flex gap-2.5">
+                        <div className="relative flex-grow">
+                          <input 
+                            type="text"
+                            maxLength={6}
+                            placeholder="รหัส OTP 6 หลัก..."
+                            value={otpInput}
+                            onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))}
+                            className="w-full bg-black/50 border border-slate-800 p-2.5 text-center text-white outline-none font-mono text-sm tracking-[0.2em] font-extrabold rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:bg-black/80 transition-all placeholder:text-gray-600 placeholder:tracking-normal placeholder:font-sans placeholder:text-xs"
+                          />
+                        </div>
                         <button
                           type="button"
                           disabled={isVerifyingOtp || otpVerified}
                           onClick={handleVerifyOtpAction}
-                          className={`px-4 py-2 text-[10.5px] font-black rounded-lg transition-all cursor-pointer ${
+                          className={`px-5 py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                             otpVerified 
-                              ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/20' 
+                              ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.1)]' 
                               : isVerifyingOtp
-                                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                                : 'bg-indigo-650 hover:bg-indigo-550 text-white'
+                                ? 'bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700'
+                                : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white shadow-lg hover:shadow-indigo-500/20 border border-indigo-500/20 active:scale-95'
                           }`}
                         >
-                          {isVerifyingOtp ? 'กำลังตรวจ...' : (otpVerified ? '✓ ตรวจสำเร็จ' : 'ตรวจรหัส OTP')}
+                          {isVerifyingOtp ? (
+                            <span className="flex items-center gap-1">
+                              <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                              ตรวจ...
+                            </span>
+                          ) : otpVerified ? (
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                              สำเร็จ
+                            </span>
+                          ) : (
+                            'ตรวจรหัส OTP'
+                          )}
                         </button>
                       </div>
+                      
                       {otpError && (
-                        <p className="text-[10px] text-red-400">{otpError}</p>
+                        <div className="flex items-center gap-1.5 text-[10px] text-red-400 bg-red-950/20 border border-red-500/10 p-2 rounded-lg">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-400" />
+                          <span>{otpError}</span>
+                        </div>
+                      )}
+                      
+                      {otpVerified && (
+                        <div className="flex items-center gap-1.5 text-[10.5px] text-emerald-400 bg-emerald-950/20 border border-emerald-500/10 p-2.5 rounded-lg animate-fadeIn">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                          <span className="font-sans font-bold">ยืนยันเบอร์โทรศัพท์และวงเงินคู่สัญญากลางเสร็จสมบูรณ์เรียบร้อยแล้วค่ะ</span>
+                        </div>
                       )}
                     </div>
                   )}
