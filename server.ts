@@ -428,14 +428,16 @@ app.post("/api/send-otp", async (req, res) => {
 
     logEvent("info", `ผลลัพธ์จากเกตเวย์ OTP Send: ${JSON.stringify(result)}`);
 
-    const isSuccess = result.status === "success" || result.success === true || result.code === 200 || result.code === "200" || result.token;
+    const finalToken = result.token || (result.data && result.data.token);
+    const finalRefCode = result.ref_code || (result.data && result.data.ref_code) || result.ref_no || (result.data && result.data.ref_no);
+    const isSuccess = result.status === "success" || result.success === true || result.code === 200 || result.code === "200" || !!finalToken;
 
-    if (isSuccess && result.token) {
-      logEvent("success", `ส่ง OTP จริงไปยัง ${cleanPhone} สำเร็จ! อ้างอิง (ref_code): ${result.ref_code || "N/A"}`);
+    if (isSuccess && finalToken) {
+      logEvent("success", `ส่ง OTP จริงไปยัง ${cleanPhone} สำเร็จ! อ้างอิง (ref_code): ${finalRefCode || "N/A"}`);
       return res.json({
         success: true,
-        token: result.token,
-        refCode: result.ref_code || ""
+        token: finalToken,
+        refCode: finalRefCode || ""
       });
     } else {
       const errMsg = result.message || result.error || JSON.stringify(result);
