@@ -14,7 +14,8 @@ import {
   Building2,
   Sparkles,
   QrCode,
-  Loader2
+  Loader2,
+  Facebook
 } from 'lucide-react';
 import { BANK_ACCOUNTS } from '../data';
 import PromptPayQR from './PromptPayQR';
@@ -439,7 +440,7 @@ export default function PaymentReportModal({
 
           </div>
         ) : (
-          <div className="p-8 text-center space-y-4 font-sans animate-fadeIn">
+          <div className="p-8 text-center space-y-5 font-sans animate-fadeIn">
             <div className="w-14 h-14 rounded-full bg-emerald-500/15 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center mx-auto shadow-md">
               <Check className="h-8 w-8 text-emerald-400" />
             </div>
@@ -452,7 +453,24 @@ export default function PaymentReportModal({
                 ✓ รหัสธุรกรรมได้รับการยืนยันโดย EasySlip API <br />✓ ตารางสัญญาระบายสีงวดค่างวดและปรับสถานภาพผ่อนสิทธิของคุณเป็น <strong>SUCCESS</strong> เรียบร้อยแล้วค่ะ ขอบพระคุณที่รักษาเครดิตการผ่อนกับเราเสมอมานะคะ!
               </p>
             </div>
-            <div className="pt-4 max-w-md mx-auto">
+
+            {/* Glowing call-to-action Facebook chat button */}
+            <div className="bg-blue-950/40 border border-blue-500/30 p-4.5 rounded-2xl max-w-md mx-auto space-y-3 shadow-[0_0_20px_rgba(59,130,246,0.15)] animate-pulse">
+              <p className="text-blue-300 font-bold text-xs">
+                🎉 ชำระเงินเรียบร้อยแล้ว! เพื่อความรวดเร็วในการจัดส่งไอดีเกม
+              </p>
+              <a
+                href="https://web.facebook.com/EFCPAShop/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs py-3 px-4 rounded-xl shadow-lg transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Facebook className="h-4.5 w-4.5 text-white fill-white" />
+                <span>คลิกที่ตรงนี้ เพื่อทักแชทไปหาแอดมินเพื่อรับ Email และ Password</span>
+              </a>
+            </div>
+
+            <div className="pt-2 max-w-md mx-auto">
               <button
                 onClick={onClose}
                 className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 py-3 rounded-xl text-xs font-bold font-sans cursor-pointer"

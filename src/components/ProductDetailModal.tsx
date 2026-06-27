@@ -544,9 +544,9 @@ export default function ProductDetailModal({
                     ) : (
                       <button
                         disabled
-                        className="w-full bg-slate-800 text-slate-500 font-bold py-4 px-6 rounded-2xl text-xs cursor-not-allowed"
+                        className="w-full bg-red-950/40 border border-red-500/20 text-red-400 font-bold py-4 px-6 rounded-2xl text-xs cursor-not-allowed uppercase tracking-wide"
                       >
-                        สินค้านี้เสร็จสิ้นผู้รับผ่อนหมดแล้ว
+                        สินค้านี้ขายออกแล้ว (ไม่สามารถผ่อนชำระได้)
                       </button>
                     )}
                   </div>
@@ -589,13 +589,22 @@ export default function ProductDetailModal({
                   </div>
 
                   <div className="pt-2">
-                    <button
-                      onClick={() => onApply(product, 0, Math.round(product.fullPrice * 0.95))}
-                      id="modal-submit-buyout"
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 rounded-2xl text-sm transition-all duration-300 transform active:scale-98 flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_8px_30px_rgba(16,185,129,0.25)]"
-                    >
-                      <span>💳 ชำระยอดซื้อสิทธิ์ขาดทันที</span>
-                    </button>
+                    {product.status === 'available' ? (
+                      <button
+                        onClick={() => onApply(product, 0, Math.round(product.fullPrice * 0.95))}
+                        id="modal-submit-buyout"
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 px-6 rounded-2xl text-sm transition-all duration-300 transform active:scale-98 flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_8px_30px_rgba(16,185,129,0.25)]"
+                      >
+                        <span>💳 ชำระยอดซื้อสิทธิ์ขาดทันที</span>
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full bg-red-950/40 border border-red-500/20 text-red-400 font-bold py-4 px-6 rounded-2xl text-xs cursor-not-allowed uppercase tracking-wide"
+                      >
+                        สินค้านี้ขายออกแล้ว (ไม่สามารถซื้อขาดได้)
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

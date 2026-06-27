@@ -532,6 +532,19 @@ export default function App() {
       setApplications(prev => prev.map(app => {
         if (app.id === newSlipRaw.applicationId) {
           addLog('success', `ยินดีด้วยค่ะ! คลื่นระบบตรวจสอบดาวน์สัญญา ${app.productCode} ผ่านฉลุย ยืนยันอนุมัติสิทธิ์เต็มรูปแบบเรียบร้อย`);
+          
+          // Automatically set the product's status to paying or sold
+          const isBuyout = app.installmentWeeks === 0;
+          setProducts(currProducts => currProducts.map(p => {
+            if (p.id === app.productId) {
+              return { 
+                ...p, 
+                status: isBuyout ? 'sold' : 'paying' 
+              };
+            }
+            return p;
+          }));
+
           return { ...app, status: 'approved' as const };
         }
         return app;
@@ -1791,7 +1804,7 @@ export default function App() {
                     <div className="space-y-5">
                       {approvedUserApplications.map((app) => {
                         // Find matched product to display image
-                        const matchedProduct = DEFAULT_PRODUCTS.find(p => p.id === app.productId);
+                        const matchedProduct = products.find(p => p.id === app.productId) || DEFAULT_PRODUCTS.find(p => p.id === app.productId);
                         const productImage = matchedProduct?.images[0] || 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?w=800&q=80';
                         
                         // Calculate verified payments count for progress
@@ -1948,6 +1961,28 @@ export default function App() {
                                   </div>
 
                                 </div>
+                              </div>
+
+                              {/* FB Contact box to get Email and Password after first payment */}
+                              <div className="bg-blue-950/25 border border-blue-500/25 p-3.5 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                                <div className="space-y-0.5">
+                                  <p className="text-white font-extrabold text-[11px] flex items-center gap-1.5">
+                                    <Facebook className="h-4 w-4 text-blue-400 fill-blue-400/20" />
+                                    <span>รับสิทธิ์ข้อมูลล็อกอินไอดีเกมหลังชำระเงินงวดแรก</span>
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 font-sans leading-normal">
+                                    ระบบได้อนุมัติสัญญาผ่อนสำเร็จแล้ว แนะนำให้คลิกทักหาแอดมินเพจเพื่อความปลอดภัยสูงสุดและรับอีเมลและรหัสผ่านค่ะ
+                                  </p>
+                                </div>
+                                <a
+                                  href="https://web.facebook.com/EFCPAShop/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full sm:w-auto text-center shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-black text-[10px] py-2 px-4 rounded-lg shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer animate-pulse"
+                                >
+                                  <span>คลิกที่ตรงนี้ เพื่อทักแชทไปหาแอดมินเพื่อรับ Email และ Password</span>
+                                  <ArrowRight className="h-3 w-3" />
+                                </a>
                               </div>
 
                               {/* Interactive Action buttons for this contract card */}

@@ -430,9 +430,9 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
           ) : (
             <button
               disabled
-              className="bg-slate-800 border border-slate-700/50 text-slate-500 font-bold px-4 py-2.5 rounded-xl text-xs cursor-not-allowed uppercase font-display"
+              className="bg-red-950/40 border border-red-500/20 text-red-400 font-extrabold px-4 py-2.5 rounded-xl text-xs cursor-not-allowed uppercase font-display"
             >
-              ถูกครอบครอง
+              ขายออกแล้ว
             </button>
           )}
 
