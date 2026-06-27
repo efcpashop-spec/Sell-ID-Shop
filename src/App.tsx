@@ -55,7 +55,8 @@ import {
   Calendar,
   Eye,
   AlertCircle,
-  QrCode
+  QrCode,
+  Lock
 } from 'lucide-react';
 
 const THAI_MONTH_NAMES = [
@@ -189,6 +190,7 @@ export default function App() {
     creditScore: 840,
     activeContracts: 0,
     walletBalance: 25000,
+    creditLimit: 50000,
     isKycApproved: false
   });
 
@@ -285,7 +287,8 @@ export default function App() {
               ...prev,
               name: data.fullName || prev.name,
               walletBalance: data.walletBalance,
-              creditScore: data.creditScore
+              creditScore: data.creditScore,
+              creditLimit: data.creditLimit !== undefined ? data.creditLimit : prev.creditLimit
             }));
             
             setKycUser(prev => ({
@@ -1141,8 +1144,47 @@ export default function App() {
           {/* PAYMENT VIEW (CUSTOMER INSTALLMENT DASHBOARD) */}
           {activeTab === 'payment' && (
             <div className="max-w-5xl mx-auto px-4 py-8 text-left animate-fadeIn space-y-8 pb-16">
-              
-              {/* Dashboard Title Header */}
+              {!kycUser.isLoggedIn ? (
+                /* Elegant Lock Screen */
+                <div className="max-w-md mx-auto text-center py-12 px-6 bg-[#0c0a24]/80 border border-purple-500/20 rounded-2xl shadow-2xl backdrop-blur-md space-y-6 my-12 animate-fadeIn">
+                  <div className="mx-auto h-16 w-16 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-[0_0_20px_rgba(139,92,246,0.15)]">
+                    <Lock className="h-8 w-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-black text-white">ระบบตรวจสอบสัญญารายบุคคล</h2>
+                    <p className="text-xs text-slate-400 leading-relaxed font-sans">
+                      เพื่อความปลอดภัยขั้นสูงสุดของข้อมูลลูกค้า แดชบอร์ดตรวจสอบประวัติวงเงิน สัญญาผ่อนชำระ และการสแกนตรวจสอบสลิปเงินฝาก EasySlip จะถูกเข้าถึงได้เฉพาะผู้ใช้ที่เข้าสู่ระบบและยืนยันตัวตนสำเร็จแล้วเท่านั้น
+                    </p>
+                  </div>
+                  <div className="pt-2 flex flex-col gap-3">
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-550 text-white font-black rounded-xl text-sm transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] cursor-pointer font-sans"
+                    >
+                      เข้าสู่ระบบสมาชิก / สมัครใหม่ 🔑
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setKycUser(prev => ({
+                          ...prev,
+                          isLoggedIn: true,
+                          email: 'demo.user@gmail.com',
+                          fullName: 'ศิริพร กอบขุนทด',
+                          phone: '081-234-5678',
+                          status: 'approved'
+                        }));
+                        addLog('info', 'เปิดโหมดรีวิวจำลองแดชบอร์ดทดลอง (Sandbox Demo) สำเร็จ');
+                      }}
+                      className="text-[10px] text-slate-500 hover:text-indigo-400 transition-colors uppercase font-mono tracking-widest font-bold cursor-pointer"
+                    >
+                      [ จำลองตัวอย่างระบบสำหรับรีวิวคิวล็อกอิน ]
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Dashboard Title Header */}
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-900 pb-6">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -1265,9 +1307,9 @@ export default function App() {
                   </div>
                   <div className="mt-2.5">
                     <span className="text-2xl font-black text-white font-mono animate-pulse">
-                      ฿{(Math.max(0, 50000 - userApplications.filter(a => a.status !== 'rejected').reduce((sum, a) => sum + a.productPrice, 0))).toLocaleString()}
+                      ฿{(Math.max(0, (userStats.creditLimit || 50000) - userApplications.filter(a => a.status !== 'rejected').reduce((sum, a) => sum + a.productPrice, 0))).toLocaleString()}
                     </span>
-                    <p className="text-[10px] text-gray-500 mt-1">จากเครดิตสะสมสูงสุด ฿50,000</p>
+                    <p className="text-[10px] text-gray-500 mt-1">จากเครดิตสะสมสูงสุด ฿{(userStats.creditLimit || 50000).toLocaleString()}</p>
                   </div>
                 </div>
 
@@ -1352,12 +1394,13 @@ export default function App() {
                               amount: app.weeklyInstallmentAmount,
                               dueDate: dueDate,
                               isPaid,
-                              type: 'installment'
+                              type: 'installment',
+                              customerName: app.fullName
                             });
                           }
                         });
-                      } else {
-                        // Synthesize beautifully spaced demo schedules for preview if no active approved contract
+                      } else if (!kycUser.isLoggedIn) {
+                        // Synthesize beautifully spaced demo schedules for preview if no active approved contract and not logged in
                         // (Only installments, no down payments as requested!)
                         for (let w = 1; w <= 4; w++) {
                           const dueDate = new Date(calendarYear, calendarMonth, w * 7 - 2);
@@ -1371,7 +1414,8 @@ export default function App() {
                             dueDate: dueDate,
                             isPaid: w <= 2, // First two are paid, last two are pending
                             type: 'installment',
-                            isDemo: true
+                            isDemo: true,
+                            customerName: 'ศิริพร (จำลอง)'
                           });
                         }
                       }
@@ -2311,7 +2355,8 @@ export default function App() {
                 </div>
 
               </div>
-
+              </>
+              )}
             </div>
           )}
 
@@ -3094,9 +3139,12 @@ export default function App() {
               phone: phone,
               status: prev.status === 'unlogged' ? 'step1' : prev.status
             }));
-            setUserStats(prev => ({
+             setUserStats(prev => ({
               ...prev,
-              name: name
+              name: name,
+              creditLimit: isUserAdmin ? 9999999 : 50000,
+              walletBalance: isUserAdmin ? 9999999 : 25000,
+              creditScore: isUserAdmin ? 999 : 840
             }));
             setShowLoginModal(false);
             addLog('success', `ยินดีต้อนรับคุณ ${name} (${email}) เข้าสู่ระบบสมาชิกผ่อนสิทธิสำเร็จตามเกตเวย์ OTP`);
