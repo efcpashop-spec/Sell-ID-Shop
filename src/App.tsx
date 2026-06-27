@@ -2417,26 +2417,24 @@ export default function App() {
                                 return;
                               }
                               setIsSendingKycOtp(true);
-                              const code = Math.floor(100000 + Math.random() * 900000).toString();
                               try {
-                                const response = await fetch('/api/send-sms', {
+                                const response = await fetch('/api/send-otp', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
-                                    phone: kycUser.phone,
-                                    message: `รหัสความปลอดภัย OTP สำหรับทำสัญญาผ่อนชำระไอดี eFootball คือ: ${code}`
+                                    phone: kycUser.phone
                                   })
                                 });
                                 const result = await response.json();
                                 if (result.success) {
-                                  setKycUser(prev => ({ ...prev, otpSent: true, otpCode: code }));
-                                  if (result.simulated) {
-                                    addLog('warn', `[ระบบจำลอง] ยิง OTP จำลองเสร็จสิ้น รหัสผ่านทดสอบคือ ${code}`);
-                                    alert(`[ระบบทดลองจำลอง] เนื่องจากเกตเวย์ SMS ขัดข้องชั่วคราว หรือไม่มีคีย์โทเค็นในตัวแปรระบบ\n\nระบบจำลองการส่งรหัสผ่านสำเร็จค่ะ!\n🔑 รหัส OTP คือ: ${code}\n(กรอกรหัสนี้เพื่อก้าวสู่ขั้นตอนต่อไปได้เลยค่ะ)`);
-                                  } else {
-                                    addLog('success', `ระบบได้ทำรายการยิง OTP ผ่านเกตเวย์ SMS2pro จริงสำเร็จไปยังเบอร์ ${kycUser.phone}`);
-                                    alert('ส่งรหัส OTP ผ่านเกตเวย์ SMS2pro เรียบร้อยแล้วค่ะ!');
-                                  }
+                                  setKycUser(prev => ({ 
+                                    ...prev, 
+                                    otpSent: true, 
+                                    otpToken: result.token, 
+                                    otpRefCode: result.refCode 
+                                  }));
+                                  addLog('success', `ระบบได้ทำรายการยิง OTP ผ่านเกตเวย์ SMS2pro จริงสำเร็จไปยังเบอร์ ${kycUser.phone} (อ้างอิง: ${result.refCode || 'N/A'})`);
+                                  alert(`ระบบเกตเวย์ SMS2pro ได้ส่งรหัส OTP (รหัสอ้างอิง: ${result.refCode || 'N/A'}) ไปยังเบอร์ ${kycUser.phone} เรียบร้อยแล้วค่ะ!`);
                                 } else {
                                   addLog('error', `ยิง SMS จริงไม่สำเร็จ: ${result.message}`);
                                   alert(`ยิง SMS จริงไม่สำเร็จ: ${result.message}`);
@@ -2463,7 +2461,7 @@ export default function App() {
                       {kycUser.otpSent && (
                         <div className="space-y-2 bg-[#050608]/40 border border-indigo-500/20 p-4 rounded-xl animate-scaleUp">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-400 font-bold">กรอกรหัสยืนยันตัวตน 6 หลักที่ได้รับใน SMS:</span>
+                            <span className="text-gray-400 font-bold font-sans">กรอกรหัสยืนยันตัวตน 6 หลักที่ได้รับใน SMS (อ้างอิง: {kycUser.otpRefCode || 'N/A'}):</span>
                           </div>
                           <div className="flex gap-2">
                             <input 
@@ -2475,12 +2473,31 @@ export default function App() {
                               className="flex-grow bg-[#050608] border border-slate-800 p-2.5 rounded-xl text-white outline-none font-mono text-xs tracking-widest"
                             />
                             <button
-                              onClick={() => {
-                                if (kycUser.otpInput === kycUser.otpCode) {
-                                  setKycUser(prev => ({ ...prev, otpVerified: true, status: 'step2' }));
-                                  addLog('info', `ตรวจสอบรหัส OTP สำเร็จ เชื่อมพิจารณาขั้นตอนอัปโหลดประวัติเอกสารสำคัญ`);
-                                } else {
-                                  alert('รหัส OTP ไม่ถูกต้อง กรุณาลองกรอกตรวจสอบอีกรอบนะคะ');
+                              onClick={async () => {
+                                if (!kycUser.otpInput || kycUser.otpInput.length < 6) {
+                                  alert('กรุณากรอกรหัสผ่าน OTP 6 หลักด้วยค่ะ');
+                                  return;
+                                }
+                                try {
+                                  const response = await fetch('/api/verify-otp', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      token: kycUser.otpToken,
+                                      otpCode: kycUser.otpInput,
+                                      refCode: kycUser.otpRefCode
+                                    })
+                                  });
+                                  const result = await response.json();
+                                  if (result.success) {
+                                    setKycUser(prev => ({ ...prev, otpVerified: true, status: 'step2' }));
+                                    addLog('info', `ตรวจสอบรหัส OTP จริงสำเร็จ เชื่อมพิจารณาขั้นตอนอัปโหลดประวัติเอกสารสำคัญ`);
+                                    alert('ตรวจสอบยืนยันรหัส OTP จริงของท่านสำเร็จเรียบร้อยแล้วค่ะ!');
+                                  } else {
+                                    alert(result.message || 'รหัส OTP ไม่ถูกต้อง กรุณาลองกรอกตรวจสอบอีกรอบนะคะ');
+                                  }
+                                } catch (e: any) {
+                                  alert(`เกิดข้อผิดพลาดในการยืนยัน OTP: ${e.message}`);
                                 }
                               }}
                               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 rounded-xl transition-colors shrink-0 cursor-pointer"

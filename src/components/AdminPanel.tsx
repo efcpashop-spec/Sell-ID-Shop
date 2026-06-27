@@ -1866,7 +1866,7 @@ export default function AdminPanel({
                         alert(`ส่ง SMS ผ่านเกตเวย์ SMS2pro สำเร็จจริง!\nเบอร์ผู้รับ: ${testSmsPhone}\nข้อความ: "${testSmsMessage}"`);
                       } else {
                         addLog('error', `ยิง SMS2pro ผิดพลาด: ${result.message}`);
-                        alert(`ส่ง SMS2pro ไม่สำเร็จ: ${result.message}\n(เกตเวย์จะสลับเป็นระบบจำลองหากยังไม่ได้กรอก Token)`);
+                        alert(`ส่ง SMS2pro ไม่สำเร็จ: ${result.message}`);
                       }
                     } catch (err: any) {
                       addLog('warn', `ไม่สามารถยิงเกตเวย์เรียลไทม์ได้ในโหมดทดสอบท้องถิ่น`);

@@ -255,7 +255,7 @@ app.post("/api/generate-qr", async (req, res) => {
 });
 
 
-// ==== API 3: sms2pro Verification OTP Route ====
+// ==== API 3: sms2pro Verification OTP Route (REAL ONLY - NO FALLBACKS) ====
 app.post("/api/send-sms", async (req, res) => {
   const { phone, message } = req.body;
   const token = getSmsToken();
@@ -265,131 +265,255 @@ app.post("/api/send-sms", async (req, res) => {
     return res.status(400).json({ success: false, message: "กรุณาระบุหมายเลขโทรศัพท์และเนื้อหาข้อความ" });
   }
 
-  logEvent("info", `เริ่มดำเนินการส่งข้อความ SMS ยืนยันสิทธิ์ไปยังเบอร์ ${phone}`);
+  logEvent("info", `เริ่มดำเนินการส่งข้อความ SMS ยืนยันสิทธิ์ไปยังเบอร์ ${phone} (ระบบใช้งานจริง)`);
 
-  // Extract OTP code from the message string (any 6 digit sequence)
-  const otpMatch = message.match(/\b\d{6}\b/);
-  const detectedOtp = otpMatch ? otpMatch[0] : "123456";
-
-  const runSimulationFallback = (reason: string) => {
-    logEvent("warn", `[ระบบส่ง SMS จำลอง] ยิงผ่านช่องทางสำรองเพื่ออำนวยความสะดวก เนื่องจาก: ${reason}`);
-    logEvent("success", `[OTP ยืนยันสิทธิ์] รหัสความปลอดภัย OTP คือ "${detectedOtp}" ส่งไปยังเบอร์โทรศัพท์ ${phone} เรียบร้อยแล้ว (จำลองสเตตัสเสร็จสิ้น)`);
-    return res.json({
-      success: true,
-      simulated: true,
-      otpCode: detectedOtp,
-      message: `ระบบเปิดโหมดจำลองอัตโนมัติเนื่องจาก: ${reason}`
+  // Verify token is available
+  if (!token || token.trim() === "" || token.includes("YOUR_SMS")) {
+    logEvent("error", "ไม่สามารถส่ง SMS ได้เนื่องจากไม่พบการตั้งค่าโทเค็น SMS2PRO_API_TOKEN ที่ถูกต้อง");
+    return res.status(400).json({ 
+      success: false, 
+      message: "ไม่พบการตั้งค่าโทเค็นระบบ SMS2PRO_API_TOKEN หรือโทเค็นไม่ถูกต้องกรุณาตรวจสอบ" 
     });
-  };
-
-  // If token is missing, or is empty/placeholder, automatically fallback to simulation instead of crashing!
-  if (!token || token === "YOUR_SMSM2PRO_API_TOKEN_HERE" || token === "YOUR_SMS2PRO_API_TOKEN_HERE" || token.trim() === "" || token.includes("YOUR_")) {
-    return runSimulationFallback("ไม่พบการตั้งค่าโทเค็นระบบ SMS2PRO_API_TOKEN หรือโทเค็นไม่ถูกต้อง");
   }
 
-  // Real Integration with sms2pro API with dual URL compatibility
-  try {
-    logEvent("info", `กำลังเรียกบริการ sms2pro สำหรับส่งข้อความ SMS เครือข่ายไทย...`);
-    
-    let response;
-    let result: any = null;
-    let isSuccess = false;
+  const endpoints = [
+    { url: "https://sms-api-prod.sms2pro.com/v1/sms/send", name: "Production Gateway (sms-api-prod.sms2pro.com)" },
+    { url: "https://portal.sms2pro.com/sms-api/sms/send", name: "Portal Gateway (portal.sms2pro.com)" },
+    { url: "https://api.sms2pro.com/v1/sms/send", name: "Legacy Gateway (api.sms2pro.com)" }
+  ];
 
-    // Helper function to safely read JSON from response without throwing Uncaught SyntaxError
-    const getSafeJson = async (resObj: any) => {
-      try {
-        const text = await resObj.text();
-        if (text.trim().startsWith("<")) {
-          return { error: true, text: text.substring(0, 100) };
-        }
-        return JSON.parse(text);
-      } catch (e: any) {
-        return { error: true, text: e.message };
-      }
-    };
+  let lastErrorMsg = "";
+  let apiResult: any = null;
+  let isSuccess = false;
 
-    // Try New Portal Endpoint First
+  // Try each endpoint sequentially until success
+  for (const endpoint of endpoints) {
     try {
-      logEvent("info", `พยายามส่งผ่าน Portal API (portal.sms2pro.com)...`);
-      response = await fetch("https://portal.sms2pro.com/sms-api/sms/send", {
+      logEvent("info", `กำลังพยายามส่งผ่านช่องทาง: ${endpoint.name}...`);
+      
+      const payload = {
+        sender: senderName,
+        sender_name: senderName,
+        recipient: phone,
+        phone: phone,
+        message: message
+      };
+
+      const response = await fetch(endpoint.url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          sender_name: senderName,
-          recipient: phone,
-          message: message
-        })
+        body: JSON.stringify(payload)
       });
-      
-      const parsed = await getSafeJson(response);
-      if (parsed && !parsed.error) {
-        result = parsed;
-        isSuccess = 
-          result.status === "success" || 
-          result.success === true || 
-          result.code === "200" || 
-          result.code === 200 ||
-          (result.data && Array.isArray(result.data) && result.data.some((d: any) => d.status === "success"));
-      } else {
-        logEvent("warn", `Portal API ส่งคืนข้อมูลที่ไม่ใช่ JSON หรือเป็นหน้า HTML: ${parsed?.text || "ว่างเปล่า"}`);
-      }
-      
-      if (!isSuccess) {
-        logEvent("warn", `Portal API แจ้งผลไม่สำเร็จ กำลังลองส่งผ่าน API เก่า...`);
-      }
-    } catch (portalError: any) {
-      logEvent("warn", `เชื่อมต่อ Portal API ล้มเหลว (${portalError.message}) กำลังลองส่งผ่าน API เก่า...`);
-    }
 
-    // If first attempt failed, try the Old API Endpoint
-    if (!isSuccess) {
+      const text = await response.text();
+      let parsed: any = null;
       try {
-        logEvent("info", `พยายามส่งผ่าน API ดั้งเดิม (api.sms2pro.com)...`);
-        response = await fetch("https://api.sms2pro.com/v1/sms/send", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            sender: senderName,
-            recipient: phone,
-            phone: phone,
-            message: message
-          })
-        });
-        
-        const parsed = await getSafeJson(response);
-        if (parsed && !parsed.error) {
-          result = parsed;
-          isSuccess = 
-            result.status === "success" || 
-            result.success === true || 
-            result.code === "200" || 
-            result.code === 200 ||
-            (result.data && Array.isArray(result.data) && result.data.some((d: any) => d.status === "success"));
-        } else {
-          logEvent("warn", `API ดั้งเดิมส่งคืนข้อมูลที่ไม่ใช่ JSON หรือเป็นหน้า HTML: ${parsed?.text || "ว่างเปล่า"}`);
-        }
-      } catch (oldApiError: any) {
-        logEvent("warn", `เชื่อมต่อ API ดั้งเดิมล้มเหลว (${oldApiError.message})`);
+        parsed = JSON.parse(text);
+      } catch (err) {
+        // Response is HTML or plain text error
+        logEvent("warn", `ช่องทาง ${endpoint.name} ตอบกลับไม่ใช่ JSON: ${text.substring(0, 100)}`);
+        lastErrorMsg = `ตอบกลับไม่ใช่ JSON (HTTP ${response.status}): ${text.substring(0, 80)}`;
+        continue;
       }
+
+      if (parsed) {
+        const hasSuccessStatus = 
+          parsed.status === "success" || 
+          parsed.success === true || 
+          parsed.code === "200" || 
+          parsed.code === 200 ||
+          parsed.message_id ||
+          (parsed.data && (
+            parsed.data.status === "success" ||
+            parsed.data.success === true ||
+            (Array.isArray(parsed.data) && parsed.data.some((d: any) => d.status === "success" || d.success === true || d.code === 200 || d.code === "200"))
+          ));
+
+        if (hasSuccessStatus) {
+          isSuccess = true;
+          apiResult = parsed;
+          logEvent("success", `ส่ง SMS จริงสำเร็จ ผ่าน ${endpoint.name}!`);
+          break;
+        } else {
+          const detail = parsed.message || parsed.error || JSON.stringify(parsed);
+          logEvent("warn", `ช่องทาง ${endpoint.name} ปฏิเสธการส่ง: ${detail}`);
+          lastErrorMsg = detail;
+        }
+      }
+    } catch (endpointError: any) {
+      logEvent("warn", `ช่องทาง ${endpoint.name} ขัดข้อง: ${endpointError.message}`);
+      lastErrorMsg = endpointError.message;
+    }
+  }
+
+  if (isSuccess) {
+    const remainingCredit = apiResult.credit_remaining || (apiResult.data && apiResult.data[0]?.credit_remaining) || "N/A";
+    logEvent("success", `ส่ง SMS ไปยัง ${phone} สำเร็จแล้ว! ผู้ส่ง: ${senderName} เครดิตคงเหลือ: ${remainingCredit}`);
+    return res.json({ 
+      success: true, 
+      simulated: false,
+      message: "ระบบเกตเวย์ SMS2pro ได้ส่งข้อความจริงไปยังเบอร์โทรศัพท์ของท่านสำเร็จเรียบร้อยแล้วค่ะ", 
+      apiResult 
+    });
+  } else {
+    logEvent("error", `ส่งข้อความ SMS จริงล้มเหลวทุกช่องทาง: ${lastErrorMsg}`);
+    return res.status(400).json({ 
+      success: false, 
+      simulated: false,
+      message: `ไม่สามารถส่งข้อความได้เนื่องจากเกตเวย์ขัดข้องหรือเครดิตไม่เพียงพอ: ${lastErrorMsg || "Unknown Error"}` 
+    });
+  }
+});
+
+
+// ==== API 3.5: SMS2PRO Managed OTP Send & Verify (REAL ONLY) ====
+app.post("/api/send-otp", async (req, res) => {
+  const { phone } = req.body;
+  const token = getSmsToken();
+  const senderName = process.env.SMS2PRO_SENDER || process.env.SMSM2PRO_SENDER || "EFCPAShop";
+
+  if (!phone) {
+    return res.status(400).json({ success: false, message: "กรุณาระบุหมายเลขโทรศัพท์เพื่อส่ง OTP" });
+  }
+
+  logEvent("info", `เรียกบริการ SMS2Pro OTP-SMS/Send ไปยังเบอร์ ${phone} (ระบบใช้งานจริง)`);
+
+  if (!token || token.trim() === "" || token.includes("YOUR_SMS")) {
+    logEvent("error", "ไม่สามารถส่ง OTP ได้เนื่องจากไม่พบการตั้งค่าโทเค็น SMS2PRO_API_TOKEN ที่ถูกต้อง");
+    return res.status(400).json({ 
+      success: false, 
+      message: "ไม่พบการตั้งค่าโทเค็นระบบ SMS2PRO_API_TOKEN หรือโทเค็นไม่ถูกต้องกรุณาตรวจสอบ" 
+    });
+  }
+
+  // Ensure phone starts with proper format or format it as needed (Thai numbers are usually 10 digits e.g., 0897654321)
+  const cleanPhone = phone.replace(/\D/g, "");
+
+  try {
+    const payload = {
+      recipient: cleanPhone,
+      sender_name: senderName,
+      digit: 6,
+      validity: 5,
+      custom_message: "รหัส OTP ของคุณคือ {otp} (รหัสอ้างอิง: {refcode}) สำหรับยืนยันสัญญากับทางเรา มีอายุการใช้งาน {validity} นาทีค่ะ"
+    };
+
+    logEvent("info", `กำลังส่ง POST ไปยัง https://portal.sms2pro.com/sms-api/otp-sms/send ด้วยผู้ส่ง ${senderName}`);
+
+    const response = await fetch("https://portal.sms2pro.com/sms-api/otp-sms/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const responseText = await response.text();
+    let result: any = null;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseErr) {
+      logEvent("error", `เกตเวย์ OTP ส่งคืนข้อมูลไม่ใช่ JSON: ${responseText.substring(0, 200)}`);
+      return res.status(400).json({
+        success: false,
+        message: `เกตเวย์ส่งคำตอบไม่ถูกต้อง (HTTP ${response.status}): ${responseText.substring(0, 100)}`
+      });
     }
 
-    if (isSuccess) {
-      logEvent("success", `ส่ง SMS ไปยัง ${phone} เรียบร้อย! ผู้ส่ง: ${senderName} เครดิตคงเหลือ: ${result.credit_remaining || (result.data && result.data[0]?.credit_remaining) || "N/A"}`);
-      return res.json({ success: true, apiResult: result });
+    logEvent("info", `ผลลัพธ์จากเกตเวย์ OTP Send: ${JSON.stringify(result)}`);
+
+    const isSuccess = result.status === "success" || result.success === true || result.code === 200 || result.code === "200" || result.token;
+
+    if (isSuccess && result.token) {
+      logEvent("success", `ส่ง OTP จริงไปยัง ${cleanPhone} สำเร็จ! อ้างอิง (ref_code): ${result.ref_code || "N/A"}`);
+      return res.json({
+        success: true,
+        token: result.token,
+        refCode: result.ref_code || ""
+      });
     } else {
-      logEvent("warn", `บริการ sms2pro ส่งไม่สำเร็จทั้งสองช่องทาง (อาจเพราะเครดิตหมด หรือโทเค็นหมดอายุ) กำลังสลับไปโหมดจำลอง...`);
-      return runSimulationFallback("บริการ SMS2pro แจ้งข้อผิดพลาด (เครดิตหมด หรือโทเค็นหมดอายุ)");
+      const errMsg = result.message || result.error || JSON.stringify(result);
+      logEvent("error", `เกตเวย์ปฏิเสธการส่ง OTP: ${errMsg}`);
+      return res.status(400).json({
+        success: false,
+        message: `เกตเวย์ปฏิเสธการส่ง: ${errMsg}`
+      });
     }
   } catch (error: any) {
-    logEvent("error", `เซิร์ฟเวอร์ SMS เชื่อมไม่ติด: ${error.message}`);
-    return runSimulationFallback(`เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย (${error.message})`);
+    logEvent("error", `ขัดข้องทางเทคนิคในการส่ง OTP: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: `เกิดข้อผิดพลาดในการติดต่อเกตเวย์ SMS: ${error.message}`
+    });
+  }
+});
+
+app.post("/api/verify-otp", async (req, res) => {
+  const { token, otpCode, refCode } = req.body;
+  const smsToken = getSmsToken();
+
+  if (!token || !otpCode) {
+    return res.status(400).json({ success: false, message: "ข้อมูลไม่ครบถ้วนสำหรับการยืนยัน OTP" });
+  }
+
+  logEvent("info", `กำลังตรวจสอบรหัส OTP: ${otpCode} (อ้างอิง: ${refCode || "N/A"})`);
+
+  try {
+    const payload = {
+      token: token,
+      otp_code: otpCode,
+      ref_code: refCode || ""
+    };
+
+    const response = await fetch("https://portal.sms2pro.com/sms-api/otp-sms/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${smsToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const responseText = await response.text();
+    let result: any = null;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseErr) {
+      logEvent("error", `เกตเวย์ตรวจ OTP ส่งคืนข้อมูลไม่ใช่ JSON: ${responseText.substring(0, 200)}`);
+      return res.status(400).json({
+        success: false,
+        message: `เกตเวย์ส่งคำตอบไม่ถูกต้อง (HTTP ${response.status}): ${responseText.substring(0, 100)}`
+      });
+    }
+
+    logEvent("info", `ผลลัพธ์จากเกตเวย์ OTP Verify: ${JSON.stringify(result)}`);
+
+    const isVerified = result.code === 0 || result.code === "0" || result.status === "success" || result.success === true;
+
+    if (isVerified) {
+      logEvent("success", `ยืนยัน OTP สำเร็จและถูกต้องทางระบบเครือข่าย!`);
+      return res.json({ success: true, message: "รหัส OTP ถูกต้องเรียบร้อยค่ะ" });
+    } else {
+      const errMsg = result.message || result.error || JSON.stringify(result);
+      logEvent("error", `รหัส OTP ไม่ถูกต้องหรือตรวจสอบล้มเหลว: ${errMsg}`);
+      return res.status(400).json({
+        success: false,
+        message: `รหัส OTP ไม่ถูกต้องหรือหมดอายุแล้วค่ะ: ${errMsg}`
+      });
+    }
+  } catch (error: any) {
+    logEvent("error", `ขัดข้องทางเทคนิคในการยืนยัน OTP: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: `เกิดข้อผิดพลาดในการตรวจสอบรหัส OTP: ${error.message}`
+    });
   }
 });
 

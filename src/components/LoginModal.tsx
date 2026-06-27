@@ -39,12 +39,14 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
   
   // OTP simulations
   const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
+  const [otpToken, setOtpToken] = useState('');
+  const [otpRefCode, setOtpRefCode] = useState('');
   const [otpInput, setOtpInput] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   // Quick preset data for demo verification
   const handleDefaultLogin = () => {
@@ -105,45 +107,63 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
       return;
     }
     
-    // Generate real 6-digit OTP code to check against
-    const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
     setOtpError('');
     setIsSendingOtp(true);
 
     try {
-      const response = await fetch('/api/send-sms', {
+      const response = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: regPhone,
-          message: `รหัสความปลอดภัย OTP ของท่านคือ: ${generatedCode} (สำหรับยืนยันสมัครผ่อนไอดีเกม)`
+          phone: regPhone
         })
       });
       const result = await response.json();
       if (result.success) {
-        setOtpCode(generatedCode);
+        setOtpToken(result.token);
+        setOtpRefCode(result.refCode);
         setOtpSent(true);
-        if (result.simulated) {
-          alert(`[ระบบทดลองจำลอง] เนื่องจากระบบยิง SMS สัญญาณเครือข่ายขัดข้องชั่วคราว หรือยังไม่ได้เปิดระบบกุญแจ SMS API จริง\n\nระบบจึงจำลองข้อความส่งสำเร็จเรียบร้อยแล้วค่ะ!\n🔑 รหัส OTP ของคุณคือ: ${generatedCode}\n(คุณสามารถนำรหัสนี้ไปกรอกช่องยืนยันได้ทันทีค่ะ)`);
-        } else {
-          alert(`ระบบเกตเวย์ SMS2pro ได้ส่งรหัส OTP ไปยังเบอร์ ${regPhone} เรียบร้อยแล้วค่ะ! กรุณารอรับ SMS และนำรหัสมากรอกยืนยันตัวตนนะคะ`);
-        }
+        alert(`ระบบเกตเวย์ SMS2pro ได้ส่งรหัส OTP (รหัสอ้างอิง: ${result.refCode || 'N/A'}) ไปยังเบอร์ ${regPhone} เรียบร้อยแล้วค่ะ! กรุณารอรับ SMS และนำรหัสมาป้อนนะคะ`);
       } else {
-        alert(`ส่ง OTP ไม่สำเร็จ: ${result.message || 'กรุณาตรวจสอบการตั้งค่า SMS2PRO_API_TOKEN บนเซิร์ฟเวอร์ค่ะ'}`);
+        alert(`ส่ง OTP ไม่สำเร็จ: ${result.message || 'กรุณาตรวจสอบการตั้งค่าคีย์ API โทเค็น'}`);
       }
     } catch (error: any) {
-      alert(`เกิดข้อผิดพลาดในการระบุส่ง OTP ของเว็บ: ${error.message}`);
+      alert(`เกิดข้อผิดพลาดในการเรียกส่ง OTP: ${error.message}`);
     } finally {
       setIsSendingOtp(false);
     }
   };
 
-  const handleVerifyOtpAction = () => {
-    if (otpInput === otpCode && otpCode !== '') {
-      setOtpVerified(true);
-      setOtpError('');
-    } else {
-      setOtpError('รหัสผ่าน OTP ของท่านไม่ถูกต้อง กรุณาตรวจสอบหรือขอใหม่อีกครั้งค่ะ');
+  const handleVerifyOtpAction = async () => {
+    if (otpInput.length < 6) {
+      setOtpError('กรุณากรอกรหัสผ่าน OTP 6 หลักที่ถูกต้องด้วยค่ะ');
+      return;
+    }
+    setOtpError('');
+    setIsVerifyingOtp(true);
+
+    try {
+      const response = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: otpToken,
+          otpCode: otpInput,
+          refCode: otpRefCode
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setOtpVerified(true);
+        setOtpError('');
+        alert('ตรวจสอบยืนยันรหัส OTP จริงสำเร็จเรียบร้อยแล้วค่ะ!');
+      } else {
+        setOtpError(result.message || 'รหัส OTP ไม่ถูกต้อง กรุณาลองตรวจสอบอีกรอบนะคะ');
+      }
+    } catch (err: any) {
+      setOtpError(`ขัดข้องระบบในการเชื่อมต่อ: ${err.message}`);
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -158,7 +178,7 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
       return;
     }
     if (!otpVerified) {
-      alert('กรุณากดรับ OTP และป้อนรหัส 6 หลักเพื่อทำสัญญาอนุมัติวงเงินค่ะ (หรือกดข้าม OTP เพื่อทดสอบเร็ว)');
+      alert('กรุณากดรับ OTP และป้อนรหัส 6 หลักเพื่อทำสัญญาอนุมัติวงเงินค่ะ');
       return;
     }
     if (regPassword.length < 4) {
@@ -296,14 +316,6 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center text-[11px] font-mono font-bold text-gray-400">
                       <span className="uppercase tracking-wider">รหัสผ่าน (PASSWORD)</span>
-                      <button 
-                        type="button" 
-                        onClick={handleDefaultLogin}
-                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-sans cursor-pointer underline hidden sm:block"
-                        title="กรอกบัญชีผู้ใช้ทดสอบสำหรับการทดสอบด่วน"
-                      >
-                        (ใช้ไอดีทดสอบด่วน)
-                      </button>
                     </div>
                     <div className="relative">
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -475,14 +487,17 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
                         />
                         <button
                           type="button"
+                          disabled={isVerifyingOtp || otpVerified}
                           onClick={handleVerifyOtpAction}
                           className={`px-4 py-2 text-[10.5px] font-black rounded-lg transition-all cursor-pointer ${
                             otpVerified 
                               ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-500/20' 
-                              : 'bg-indigo-650 hover:bg-indigo-550 text-white'
+                              : isVerifyingOtp
+                                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                                : 'bg-indigo-650 hover:bg-indigo-550 text-white'
                           }`}
                         >
-                          {otpVerified ? '✓ ตรวจสำเร็จ' : 'ตรวจรหัส OTP'}
+                          {isVerifyingOtp ? 'กำลังตรวจ...' : (otpVerified ? '✓ ตรวจสำเร็จ' : 'ตรวจรหัส OTP')}
                         </button>
                       </div>
                       {otpError && (
