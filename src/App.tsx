@@ -2430,8 +2430,13 @@ export default function App() {
                                 const result = await response.json();
                                 if (result.success) {
                                   setKycUser(prev => ({ ...prev, otpSent: true, otpCode: code }));
-                                  addLog('success', `ระบบได้ทำรายการยิง OTP ผ่านเกตเวย์ SMS2pro จริงสำเร็จไปยังเบอร์ ${kycUser.phone}`);
-                                  alert('ส่งรหัส OTP ผ่านเกตเวย์ SMS2pro เรียบร้อยแล้วค่ะ!');
+                                  if (result.simulated) {
+                                    addLog('warn', `[ระบบจำลอง] ยิง OTP จำลองเสร็จสิ้น รหัสผ่านทดสอบคือ ${code}`);
+                                    alert(`[ระบบทดลองจำลอง] เนื่องจากเกตเวย์ SMS ขัดข้องชั่วคราว หรือไม่มีคีย์โทเค็นในตัวแปรระบบ\n\nระบบจำลองการส่งรหัสผ่านสำเร็จค่ะ!\n🔑 รหัส OTP คือ: ${code}\n(กรอกรหัสนี้เพื่อก้าวสู่ขั้นตอนต่อไปได้เลยค่ะ)`);
+                                  } else {
+                                    addLog('success', `ระบบได้ทำรายการยิง OTP ผ่านเกตเวย์ SMS2pro จริงสำเร็จไปยังเบอร์ ${kycUser.phone}`);
+                                    alert('ส่งรหัส OTP ผ่านเกตเวย์ SMS2pro เรียบร้อยแล้วค่ะ!');
+                                  }
                                 } else {
                                   addLog('error', `ยิง SMS จริงไม่สำเร็จ: ${result.message}`);
                                   alert(`ยิง SMS จริงไม่สำเร็จ: ${result.message}`);

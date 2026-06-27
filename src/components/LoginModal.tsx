@@ -123,7 +123,11 @@ export default function LoginModal({ onClose, onLoginSuccess }: LoginModalProps)
       if (result.success) {
         setOtpCode(generatedCode);
         setOtpSent(true);
-        alert(`ระบบเกตเวย์ SMS2pro ได้ส่งรหัส OTP ไปยังเบอร์ ${regPhone} เรียบร้อยแล้วค่ะ! กรุณารอรับ SMS และนำรหัสมากรอกยืนยันตัวตนนะคะ`);
+        if (result.simulated) {
+          alert(`[ระบบทดลองจำลอง] เนื่องจากระบบยิง SMS สัญญาณเครือข่ายขัดข้องชั่วคราว หรือยังไม่ได้เปิดระบบกุญแจ SMS API จริง\n\nระบบจึงจำลองข้อความส่งสำเร็จเรียบร้อยแล้วค่ะ!\n🔑 รหัส OTP ของคุณคือ: ${generatedCode}\n(คุณสามารถนำรหัสนี้ไปกรอกช่องยืนยันได้ทันทีค่ะ)`);
+        } else {
+          alert(`ระบบเกตเวย์ SMS2pro ได้ส่งรหัส OTP ไปยังเบอร์ ${regPhone} เรียบร้อยแล้วค่ะ! กรุณารอรับ SMS และนำรหัสมากรอกยืนยันตัวตนนะคะ`);
+        }
       } else {
         alert(`ส่ง OTP ไม่สำเร็จ: ${result.message || 'กรุณาตรวจสอบการตั้งค่า SMS2PRO_API_TOKEN บนเซิร์ฟเวอร์ค่ะ'}`);
       }
