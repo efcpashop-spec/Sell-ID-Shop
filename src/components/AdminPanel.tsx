@@ -85,7 +85,7 @@ export default function AdminPanel({
   const [formMaxDownPercent, setFormMaxDownPercent] = useState('100');
   const [formInterestRate, setFormInterestRate] = useState('5');
   const [formDivision, setFormDivision] = useState('Division 1');
-  const [formWinRate, setFormWinRate] = useState('85%');
+  const [formWinRate, setFormWinRate] = useState('สะอาด2ระบบ');
   const [formImageList, setFormImageList] = useState<string[]>([
     'https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=800'
   ]);
@@ -115,7 +115,7 @@ export default function AdminPanel({
       { label: 'ค่าพลังทีมรวม (Strength)', value: `${formOvr || '3150'} Collective OVR` },
       { label: 'การ์ด Epic / Big Time', value: `${formEpicCount || '15'} ใบ` },
       { label: 'กลุ่มลีก (Division)', value: formDivision || 'Division 1' },
-      { label: 'อัตราชนะปัจจุบัน', value: formWinRate || '85%' },
+      { label: 'การเชื่อมต่อไอดี', value: formWinRate || 'สะอาด2ระบบ' },
       { label: 'คีย์ผู้เล่นคนสำคัญ', value: formKeyPlayers || 'L. Messi (Epic), Neymar, Ronaldinho' },
       { label: 'แพลตฟอร์ม', value: formPlatform || 'Mobile (มือถือ)' }
     ];
@@ -219,7 +219,7 @@ export default function AdminPanel({
     setFormMaxDownPercent('100');
     setFormInterestRate('5');
     setFormDivision('Division 1');
-    setFormWinRate('85%');
+    setFormWinRate('สะอาด2ระบบ');
     setFormImageList(['https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=800']);
     setFormKeyPlayers('L. Messi (Epic), Neymar, Ronaldinho');
     
@@ -254,7 +254,7 @@ export default function AdminPanel({
     setFormMaxDownPercent(String(prod.maxDownPercent || 100));
     setFormInterestRate(String(prod.interestRate || findDetail('ดอกเบี้ย', '5').replace(/[^0-9]/g, '') || '5'));
     setFormDivision(prod.division || findDetail('Division', 'Division 1'));
-    setFormWinRate(prod.winRate || findDetail('ชนะ', '85%'));
+    setFormWinRate(prod.winRate || findDetail('เชื่อมต่อ', '') || findDetail('ชนะ', 'สะอาด2ระบบ'));
     setFormImageList(prod.images.length > 0 ? prod.images : ['https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=800']);
     setFormKeyPlayers(prod.keyPlayers || findDetail('ผู้เล่น', 'L. Messi (Epic), Neymar, Ronaldinho'));
     
@@ -1178,15 +1178,17 @@ export default function AdminPanel({
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-gray-300 font-bold block">อัตราชนะปัจจุบัน</label>
-                    <input 
-                      type="text" 
-                      placeholder="85%"
+                   <div className="space-y-1">
+                    <label className="text-gray-300 font-bold block">การเชื่อมต่อไอดี</label>
+                    <select 
                       value={formWinRate}
                       onChange={(e) => setFormWinRate(e.target.value)}
-                      className="w-full bg-[#050609] border border-slate-800 p-2.5 rounded-xl text-white outline-none focus:border-cyan-500 font-mono font-semibold"
-                    />
+                      className="w-full bg-[#050609] border border-slate-800 p-2.5 rounded-xl text-white outline-none focus:border-cyan-500 font-sans font-semibold cursor-pointer"
+                    >
+                      <option value="สะอาด2ระบบ">สะอาด2ระบบ</option>
+                      <option value="ไม่สะอาดสะอาด1ระบบ (ติดGC ระบบiOS)">ไม่สะอาดสะอาด1ระบบ (ติดGC ระบบiOS)</option>
+                      <option value="ไม่สะอาดสะอาด1ระบบ (ติดGG ระบบAndroid)">ไม่สะอาดสะอาด1ระบบ (ติดGG ระบบAndroid)</option>
+                    </select>
                   </div>
 
                   {/* Row 5: Dynamic Photo Gallery upload mimicking */}

@@ -202,7 +202,7 @@ export default function ProductDetailModal({
                     แพลตฟอร์ม: <span className="text-white font-black">{platformName}</span>
                   </span>
                   <span className="bg-[#120b2d] border border-purple-500/20 text-emerald-400 px-3 py-1 rounded-full font-bold">
-                    อัตราชนะ: <span className="text-white font-black">{winRateInfo}</span>
+                    การเชื่อมต่อไอดี: <span className="text-white font-black">{product.winRate || product.details.find(d => d.label === 'การเชื่อมต่อไอดี' || d.label === 'อัตราชนะปัจจุบัน')?.value || 'สะอาด2ระบบ'}</span>
                   </span>
                 </div>
               </div>
@@ -264,12 +264,22 @@ export default function ProductDetailModal({
                   <Gamepad className="h-4 w-4" /> คุณสมบัติบัญชีหลักอย่างละเอียด
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 pt-1.5">
-                  {(product.details || []).map((detail, index) => (
-                    <div key={index} className="flex flex-col border-b border-purple-900/10 pb-1.5 text-xs">
-                      <span className="text-[10px] text-gray-500 font-mono font-bold uppercase">{detail.label}</span>
-                      <span className="text-slate-200 font-black truncate mt-0.5">{detail.value}</span>
-                    </div>
-                  ))}
+                  {(product.details || []).map((detail, index) => {
+                    let displayLabel = detail.label;
+                    let displayValue = detail.value;
+
+                    if (detail.label === 'อัตราชนะปัจจุบัน' || detail.label === 'การเชื่อมต่อไอดี') {
+                      displayLabel = 'การเชื่อมต่อไอดี';
+                      displayValue = product.winRate || detail.value || 'สะอาด2ระบบ';
+                    }
+
+                    return (
+                      <div key={index} className="flex flex-col border-b border-purple-900/10 pb-1.5 text-xs">
+                        <span className="text-[10px] text-gray-500 font-mono font-bold uppercase">{displayLabel}</span>
+                        <span className="text-slate-200 font-black truncate mt-0.5">{displayValue}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

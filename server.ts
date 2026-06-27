@@ -1,7 +1,15 @@
-import "dotenv/config";
-import express from "express";
+import dotenv from "dotenv";
 import path from "path";
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+
+import express from "express";
 import { createServer as createViteServer } from "vite";
+
+console.log("=== SERVER BOOTING ===");
+console.log("SMS2PRO_API_TOKEN is set:", !!process.env.SMS2PRO_API_TOKEN);
+if (process.env.SMS2PRO_API_TOKEN) {
+  console.log("SMS2PRO_API_TOKEN prefix:", process.env.SMS2PRO_API_TOKEN.substring(0, 15) + "...");
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,13 +35,33 @@ function logEvent(type: "info" | "success" | "warn" | "error", message: string) 
   });
 }
 
+// Helper to resolve the correct SMS2Pro token, falling back to the hardcoded token if missing or placeholder
+function getSmsToken(): string {
+  const envToken = process.env.SMS2PRO_API_TOKEN || process.env.SMSM2PRO_API_TOKEN;
+  if (!envToken || envToken === "YOUR_SMS2PRO_API_TOKEN_HERE" || envToken === "YOUR_SMSM2PRO_API_TOKEN_HERE" || envToken.trim() === "") {
+    return "eyJhbGciOiJIUzI1NiIsInR5cCI6ImFjY2VzcyJ9.eyJfaWQiOiI2YTBlMzk0YjYwM2QzNmYyYTNhODAxNGEiLCJncm91cF9pZCI6IjY0MTJiNWUzMTMxYmFkYTZjMThjMmI2ZSIsImJyYW5kX2lkIjoiNjQxM2YxOTE0ZTU1ZjUxYTgxMmM1ODBjIiwiZW1haWwiOiJjaGF5YXBvbC5hcm0yMDA0QGdtYWlsLmNvbSIsImZpcnN0X25hbWUiOiLguIrguKLguJ7guKUiLCJsYXN0X25hbWUiOiLguJvguLjguI3guJnguJnguJfguYwiLCJpYXQiOjE3ODA1Nzc2NTMsImV4cCI6NDkzNjMzNzY1MywiYXVkIjoiaHR0cHM6Ly95b3VyZG9tYWluLmNvbSIsImlzcyI6ImZlYXRoZXJzIiwianRpIjoiN2U3MjQ0ZTYtYzI0Zi00NDY1LWEyZTctNjg4OTdlOTdlNjVkIn0.g42X--zid4_NHQfAmNHkDVXCE_xvbkoQcANoFjzVAmw";
+  }
+  return envToken;
+}
+
+// Helper to resolve the EasySlip API key, falling back if missing or placeholder
+function getEasySlipKey(): string {
+  const envKey = process.env.EASYSLIP_API_KEY;
+  if (!envKey || envKey === "YOUR_EASYSLIP_API_KEY_HERE" || envKey.trim() === "") {
+    return "80577a63-8428-40cd-999d-be9669474c76";
+  }
+  return envKey;
+}
+
 // ==== API 1: Healthcheck and system constants ====
 app.get("/api/status", (req, res) => {
-  const smsToken = process.env.SMS2PRO_API_TOKEN || process.env.SMSM2PRO_API_TOKEN;
+  const smsToken = getSmsToken();
+  const easySlipKey = getEasySlipKey();
   res.json({
     status: "online",
-    hasEasySlip: !!process.env.EASYSLIP_API_KEY && process.env.EASYSLIP_API_KEY !== "YOUR_EASYSLIP_API_KEY_HERE",
-    hasSms: !!smsToken && smsToken !== "YOUR_SMSM2PRO_API_TOKEN_HERE" && smsToken !== "YOUR_SMS2PRO_API_TOKEN_HERE"
+    hasEasySlip: !!easySlipKey && easySlipKey !== "YOUR_EASYSLIP_API_KEY_HERE",
+    hasSms: !!smsToken && smsToken !== "YOUR_SMSM2PRO_API_TOKEN_HERE" && smsToken !== "YOUR_SMS2PRO_API_TOKEN_HERE",
+    debugToken: smsToken ? `${smsToken.substring(0, 15)}... (${smsToken.length} chars)` : "not found"
   });
 });
 
@@ -43,7 +71,7 @@ let verifiedTransRefs = new Set<string>(["MOCK-REF-123456", "MOCK-REF-789012"]);
 // ==== API 2: EasySlip Verification Route (Legacy & Dual Mode) ====
 app.post("/api/verify-slip", async (req, res) => {
   const { slipImage, expectedAmount, targetAccount } = req.body;
-  const apiKey = process.env.EASYSLIP_API_KEY || "80577a63-8428-40cd-999d-be9669474c76";
+  const apiKey = getEasySlipKey();
 
   logEvent("info", `เริ่มการตรวจสอบสลิปเงินด้วยระบบ EasySlip API (เป้าหมายยอด: ฿${expectedAmount || "ไม่ระบุ"})`);
 
@@ -230,8 +258,8 @@ app.post("/api/generate-qr", async (req, res) => {
 // ==== API 3: sms2pro Verification OTP Route ====
 app.post("/api/send-sms", async (req, res) => {
   const { phone, message } = req.body;
-  const token = process.env.SMS2PRO_API_TOKEN || process.env.SMSM2PRO_API_TOKEN;
-  const senderName = process.env.SMS2PRO_SENDER || process.env.SMSM2PRO_SENDER || "EF-SHOP";
+  const token = getSmsToken();
+  const senderName = process.env.SMS2PRO_SENDER || process.env.SMSM2PRO_SENDER || "EFCPAShop";
 
   if (!phone || !message) {
     return res.status(400).json({ success: false, message: "กรุณาระบุหมายเลขโทรศัพท์และเนื้อหาข้อความ" });
