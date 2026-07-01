@@ -48,6 +48,7 @@ export default function ProductDetailModal({
 }: ProductDetailModalProps) {
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [activeMode, setActiveMode] = useState<'installment' | 'full'>('installment');
+  const [expandedDetails, setExpandedDetails] = useState<Record<number, boolean>>({});
   
   // Installment configuration states
   const rawMinPct = product.minDownPercent !== undefined 
@@ -273,10 +274,30 @@ export default function ProductDetailModal({
                       displayValue = product.winRate || detail.value || 'สะอาด2ระบบ';
                     }
 
+                    const isPlayers = displayLabel.includes('ผู้เล่น') || displayLabel.includes('นักเตะ') || displayLabel === 'คีย์ผู้เล่นคนสำคัญ';
+                    const isLongValue = displayValue.length > 40 || isPlayers;
+                    const isExpanded = !!expandedDetails[index];
+
+                    // If it is long, we can expand it to span across two columns
+                    const gridSpanClass = isLongValue ? "col-span-1 sm:col-span-2" : "col-span-1";
+
                     return (
-                      <div key={index} className="flex flex-col border-b border-purple-900/10 pb-1.5 text-xs">
+                      <div key={index} className={`flex flex-col border-b border-purple-900/10 pb-1.5 text-xs ${gridSpanClass}`}>
                         <span className="text-[10px] text-gray-500 font-mono font-bold uppercase">{displayLabel}</span>
-                        <span className="text-slate-200 font-black truncate mt-0.5">{displayValue}</span>
+                        <div className="mt-0.5 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                          <span className={`text-slate-200 font-black ${isExpanded ? 'whitespace-normal break-words' : 'truncate'} flex-grow`}>
+                            {displayValue}
+                          </span>
+                          {isLongValue && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedDetails(prev => ({ ...prev, [index]: !prev[index] }))}
+                              className="text-[#38bdf8] hover:text-sky-300 font-bold text-[11px] underline flex-shrink-0 ml-1 cursor-pointer select-none self-end"
+                            >
+                              {isExpanded ? 'ซ่อน' : 'แสดงเพิ่มเติม'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

@@ -48,6 +48,7 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
   const [showCalculator, setShowCalculator] = useState(false);
   const [selectedWeeks, setSelectedWeeks] = useState(4);
   const [selectedDownIndex, setSelectedDownIndex] = useState(0);
+  const [expandedDetails, setExpandedDetails] = useState<Record<number, boolean>>({});
 
   const prevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -253,13 +254,35 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
         </h3>
 
         {/* Key specifications highlights */}
-        <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/50 mb-3 text-xs">
-          {(product.details || []).slice(0, 2).map((det, index) => (
-            <div key={index} className="flex flex-col leading-tight">
-              <span className="text-[10px] text-gray-500 font-sans">{det.label}</span>
-              <span className="text-slate-300 font-bold truncate mt-0.5 font-sans">{det.value}</span>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 gap-x-2 gap-y-3 mt-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/50 mb-3 text-xs">
+          {(product.details || []).slice(0, 2).map((det, index) => {
+            const isLong = det.value.length > 25 || det.label.includes('ผู้เล่น') || det.label.includes('นักเตะ');
+            const isExpanded = !!expandedDetails[index];
+            const spanClass = (isLong || isExpanded) ? "col-span-2" : "col-span-1";
+
+            return (
+              <div key={index} className={`flex flex-col leading-tight ${spanClass}`}>
+                <span className="text-[10px] text-gray-500 font-sans">{det.label}</span>
+                <div className="mt-0.5 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                  <span className={`text-slate-300 font-bold font-sans ${isExpanded ? 'whitespace-normal break-words' : 'truncate'} flex-grow`}>
+                    {det.value}
+                  </span>
+                  {isLong && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedDetails(prev => ({ ...prev, [index]: !prev[index] }));
+                      }}
+                      className="text-[#38bdf8] hover:text-sky-300 font-bold text-[10px] underline flex-shrink-0 cursor-pointer select-none self-end"
+                    >
+                      {isExpanded ? 'ซ่อน' : 'แสดงเพิ่มเติม'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Divider */}
