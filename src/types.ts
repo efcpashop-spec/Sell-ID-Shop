@@ -63,6 +63,7 @@ export interface PaymentSlip {
   slipImage: string;
   status: 'pending' | 'verified' | 'rejected';
   submittedAt: string;
+  paymentType?: 'down' | 'installment' | string;
 }
 
 export interface SystemLog {

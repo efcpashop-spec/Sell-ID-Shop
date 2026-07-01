@@ -259,72 +259,85 @@ export default function AdminPanel({
       ? formCode.trim().toUpperCase() 
       : `EFC-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    if (editProductId) {
-      // Edit existing product
-      setProducts(prev => prev.map(p => {
-        if (p.id === editProductId) {
-          return {
-            ...p,
-            code: generatedCode,
-            title: formTitle,
-            game: 'efootball',
-            description: formDescription || 'สกินสวยงามฮีโร่พร้อมแข่งขัน ไอดีปลอดภัย สัญญากฏหมายมอบอำนาจค้ำชูเสถียร',
-            fullPrice: priceNum,
-            originalPrice: formOriginalPrice ? Number(formOriginalPrice) : undefined,
-            downPayment: finalDownPaymentPrice,
-            minInstallmentWeeks: Number(formMinWeeks),
-            maxInstallmentWeeks: Number(formMaxWeeks),
-            weeklyInstallment: calculatedWeeklyPrice,
-            images: formImageList.filter(img => img.trim() !== ''),
-            details: detailPairs,
-            // eFootball custom specs attached
-            costPrice: Number(formCostPrice),
-            minDownPercent: minDownPct,
-            maxDownPercent: Number(formMaxDownPercent),
-            interestRate: calculatedInterestRate,
-            division: formDivision,
-            winRate: formWinRate,
-            keyPlayers: formKeyPlayers,
-            platform: formPlatform,
-            ovr: Number(formOvr),
-            epicCount: Number(formEpicCount)
-          };
+    const savePayload: Product = editProductId 
+      ? {
+          ...products.find(p => p.id === editProductId)!,
+          code: generatedCode,
+          title: formTitle,
+          game: 'efootball',
+          description: formDescription || 'สกินสวยงามฮีโร่พร้อมแข่งขัน ไอดีปลอดภัย สัญญากฏหมายมอบอำนาจค้ำชูเสถียร',
+          fullPrice: priceNum,
+          originalPrice: formOriginalPrice ? Number(formOriginalPrice) : undefined,
+          downPayment: finalDownPaymentPrice,
+          minInstallmentWeeks: Number(formMinWeeks),
+          maxInstallmentWeeks: Number(formMaxWeeks),
+          weeklyInstallment: calculatedWeeklyPrice,
+          images: formImageList.filter(img => img.trim() !== ''),
+          details: detailPairs,
+          // eFootball custom specs attached
+          costPrice: Number(formCostPrice),
+          minDownPercent: minDownPct,
+          maxDownPercent: Number(formMaxDownPercent),
+          interestRate: calculatedInterestRate,
+          division: formDivision,
+          winRate: formWinRate,
+          keyPlayers: formKeyPlayers,
+          platform: formPlatform,
+          ovr: Number(formOvr),
+          epicCount: Number(formEpicCount)
         }
-        return p;
-      }));
+      : {
+          id: 'p-' + Date.now(),
+          code: generatedCode,
+          title: formTitle,
+          game: 'efootball',
+          description: formDescription || 'สกินแนวรุกสุดตำนาน สะอาด ปลอดภัย ยินดีเปลี่ยนผ่านเว็บหลักรับประกัน 100%',
+          fullPrice: priceNum,
+          originalPrice: formOriginalPrice ? Number(formOriginalPrice) : undefined,
+          downPayment: finalDownPaymentPrice,
+          minInstallmentWeeks: Number(formMinWeeks),
+          maxInstallmentWeeks: Number(formMaxWeeks),
+          weeklyInstallment: calculatedWeeklyPrice,
+          images: formImageList.filter(img => img.trim() !== ''),
+          details: detailPairs,
+          status: 'available',
+          isHot: true,
+          // eFootball custom specs attached
+          costPrice: Number(formCostPrice),
+          minDownPercent: minDownPct,
+          maxDownPercent: Number(formMaxDownPercent),
+          interestRate: calculatedInterestRate,
+          division: formDivision,
+          winRate: formWinRate,
+          keyPlayers: formKeyPlayers,
+          platform: formPlatform,
+          ovr: Number(formOvr),
+          epicCount: Number(formEpicCount)
+        };
+
+    // Call backend to save in-memory on server
+    fetch('/api/products/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(savePayload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.products) {
+        setProducts(data.products);
+        localStorage.setItem('efc_products', JSON.stringify(data.products));
+      }
+    })
+    .catch(err => console.error('Error saving product on server:', err));
+
+    if (editProductId) {
+      // Edit existing product locally
+      setProducts(prev => prev.map(p => p.id === editProductId ? savePayload : p));
       addLog('success', `แก้ไขรายละเอียดไอดีเกมรหัส ${generatedCode} เรียบร้อยแล้ว`);
       setEditProductId(null);
     } else {
-      // Add brand new product
-      const newProd: Product = {
-        id: 'p-' + Date.now(),
-        code: generatedCode,
-        title: formTitle,
-        game: 'efootball',
-        description: formDescription || 'สกินแนวรุกสุดตำนาน สะอาด ปลอดภัย ยินดีเปลี่ยนผ่านเว็บหลักรับประกัน 100%',
-        fullPrice: priceNum,
-        originalPrice: formOriginalPrice ? Number(formOriginalPrice) : undefined,
-        downPayment: finalDownPaymentPrice,
-        minInstallmentWeeks: Number(formMinWeeks),
-        maxInstallmentWeeks: Number(formMaxWeeks),
-        weeklyInstallment: calculatedWeeklyPrice,
-        images: formImageList.filter(img => img.trim() !== ''),
-        details: detailPairs,
-        status: 'available',
-        isHot: true,
-        // eFootball custom specs attached
-        costPrice: Number(formCostPrice),
-        minDownPercent: minDownPct,
-        maxDownPercent: Number(formMaxDownPercent),
-        interestRate: calculatedInterestRate,
-        division: formDivision,
-        winRate: formWinRate,
-        keyPlayers: formKeyPlayers,
-        platform: formPlatform,
-        ovr: Number(formOvr),
-        epicCount: Number(formEpicCount)
-      };
-      setProducts(prev => [newProd, ...prev]);
+      // Add brand new product locally
+      setProducts(prev => [savePayload, ...prev]);
       addLog('success', `เพิ่มไอดี eFootball ตัวใหม่รหัส ${generatedCode} เข้าคลังสินค้าจัดวางหน้าร้านสำเร็จ`);
     }
 
@@ -402,6 +415,20 @@ export default function AdminPanel({
 
   const handleDeleteProduct = (pId: string, pCode: string) => {
     if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบไอดีเกมรหัส ${pCode} ออกจากเว็ปไซต์?`)) {
+      fetch('/api/products/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: pId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.products) {
+          setProducts(data.products);
+          localStorage.setItem('efc_products', JSON.stringify(data.products));
+        }
+      })
+      .catch(err => console.error('Error deleting product on server:', err));
+
       setProducts(prev => prev.filter(p => p.id !== pId));
       addLog('warn', `ลบรายการไอดีเกม ${pCode} ออกจากตารางเรียบร้อยแล้ว`);
     }
@@ -416,13 +443,15 @@ export default function AdminPanel({
       return;
     }
     const rate = discountPct / 100;
-    setProducts(prev => prev.map(p => {
+
+    let updatedProduct: any = null;
+    const newProductsList = products.map(p => {
       if (p.id === pId) {
         const original = p.originalPrice || p.fullPrice;
         const discountedFull = Math.max(0, Math.round(p.fullPrice * (1 - rate)));
         const discountedDown = Math.max(0, Math.round(p.downPayment * (1 - rate)));
         const discountedWeekly = Math.max(0, Math.round(p.weeklyInstallment * (1 - rate)));
-        return {
+        updatedProduct = {
           ...p,
           originalPrice: original,
           fullPrice: discountedFull,
@@ -430,10 +459,29 @@ export default function AdminPanel({
           weeklyInstallment: discountedWeekly,
           isHot: true // Mark discounted products as hot so they catch attention!
         };
+        return updatedProduct;
       }
       return p;
-    }));
-    addLog('success', `ปรับราคาลดพิเศษสำหรับไอดี ${pCode} ลง ${discountPct}% เรียบร้อยแล้วค่ะ!`);
+    });
+
+    if (updatedProduct) {
+      fetch('/api/products/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedProduct)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.products) {
+          setProducts(data.products);
+          localStorage.setItem('efc_products', JSON.stringify(data.products));
+        }
+      })
+      .catch(err => console.error('Error saving discounted product on server:', err));
+
+      setProducts(newProductsList);
+      addLog('success', `ปรับราคาลดพิเศษสำหรับไอดี ${pCode} ลง ${discountPct}% เรียบร้อยแล้วค่ะ!`);
+    }
   };
 
   // Contracts Status approvals
@@ -452,11 +500,28 @@ export default function AdminPanel({
     // Update product status to matching state
     const matchedApp = applications.find(a => a.id === appId);
     if (matchedApp) {
+      const isBuyout = matchedApp.installmentWeeks === 0;
+      const targetProductStatus = isApproved ? (isBuyout ? 'sold' : 'paying') : 'available';
+
+      // Call backend to update application status immediately
+      fetch('/api/applications/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: appId, status: isApproved ? 'approved' : 'rejected' })
+      }).catch(err => console.error('Error updating application status on server:', err));
+
+      // Call backend to update product status immediately
+      fetch('/api/products/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: matchedApp.productId, status: targetProductStatus })
+      }).catch(err => console.error('Error updating product status on server:', err));
+
       setProducts(prev => prev.map(p => {
         if (p.id === matchedApp.productId) {
           return {
             ...p,
-            status: isApproved ? 'paying' : 'available'
+            status: targetProductStatus
           };
         }
         return p;
@@ -480,6 +545,13 @@ export default function AdminPanel({
       }
       return slip;
     }));
+
+    // Call backend to update slip status immediately
+    fetch('/api/slips/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: slipId, status: isVerified ? 'verified' : 'rejected' })
+    }).catch(err => console.error('Error updating slip status on server:', err));
 
     addLog(
       isVerified ? 'success' : 'error', 

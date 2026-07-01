@@ -4,6 +4,7 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 import express from "express";
 import { createServer as createViteServer } from "vite";
+import { DEFAULT_PRODUCTS } from "./src/data";
 
 console.log("=== SERVER BOOTING ===");
 console.log("SMS2PRO_API_TOKEN is set:", !!process.env.SMS2PRO_API_TOKEN);
@@ -877,6 +878,89 @@ app.post("/api/users/delete", (req, res) => {
   
   logEvent("warn", `แอดมินลบผู้ใช้: ${deletedUser.fullName} (${cleanEmail}) ออกจากระบบ`);
   res.json({ success: true, message: "ลบข้อมูลผู้ใช้งานเรียบร้อยแล้วค่ะ" });
+});
+
+// ==== Server side in-memory endpoints for products (keeps statuses synchronized across clients) ====
+let serverProducts: any[] = [...DEFAULT_PRODUCTS];
+let productsInitialized = false;
+
+app.get("/api/products", (req, res) => {
+  res.json({ products: serverProducts });
+});
+
+app.post("/api/products/sync", (req, res) => {
+  const { products } = req.body;
+  if (!products || !Array.isArray(products)) {
+    return res.status(400).json({ success: false, message: "Invalid products array" });
+  }
+
+  // One-time initialization merge on first client contact to preserve existing custom products
+  if (!productsInitialized) {
+    let mergedCount = 0;
+    products.forEach((clientProd: any) => {
+      const exists = serverProducts.some(p => p.id === clientProd.id || p.code === clientProd.code);
+      if (!exists) {
+        serverProducts.push(clientProd);
+        mergedCount++;
+      }
+    });
+    productsInitialized = true;
+    if (mergedCount > 0) {
+      logEvent("info", `เชื่อมข้อมูลคลังเริ่มต้นสำเร็จ ซิงค์สินค้าเดิมของร้านเพิ่มอีก ${mergedCount} รายการเข้าสู่คลังกลาง`);
+    }
+  }
+
+  res.json({ success: true, products: serverProducts });
+});
+
+app.post("/api/products/save", (req, res) => {
+  const product = req.body;
+  if (!product || !product.id) {
+    return res.status(400).json({ success: false, message: "Invalid product data" });
+  }
+
+  const idx = serverProducts.findIndex(p => p.id === product.id);
+  if (idx !== -1) {
+    // Update existing product
+    serverProducts[idx] = {
+      ...serverProducts[idx],
+      ...product
+    };
+    logEvent("info", `แอดมินอัปเดตข้อมูลสินค้า รหัส ${product.code}`);
+  } else {
+    // Add new product
+    serverProducts.unshift(product);
+    logEvent("success", `แอดมินเพิ่มสินค้าใหม่ รหัส ${product.code} เข้าสู่คลังกลาง`);
+  }
+
+  res.json({ success: true, products: serverProducts });
+});
+
+app.post("/api/products/delete", (req, res) => {
+  const { id } = req.body;
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Invalid product id" });
+  }
+
+  const prod = serverProducts.find(p => p.id === id);
+  if (prod) {
+    serverProducts = serverProducts.filter(p => p.id !== id);
+    logEvent("warn", `แอดมินลบสินค้า รหัส ${prod.code} ออกจากคลังกลาง`);
+    return res.json({ success: true, products: serverProducts });
+  }
+
+  res.status(404).json({ success: false, message: "ไม่พบสินค้าในระบบ" });
+});
+
+app.post("/api/products/update-status", (req, res) => {
+  const { id, status } = req.body;
+  const prodIdx = serverProducts.findIndex(p => p.id === id);
+  if (prodIdx !== -1) {
+    serverProducts[prodIdx].status = status;
+    logEvent("info", `ปรับปรุงสถานะสินค้า ${id} เป็นสถานะ: ${status.toUpperCase()}`);
+    return res.json({ success: true, product: serverProducts[prodIdx] });
+  }
+  res.status(404).json({ success: false, message: "ไม่พบข้อมูลสินค้า" });
 });
 
 // ==== Server side in-memory endpoints for applications (keeps them synced without file write mistakes) ====

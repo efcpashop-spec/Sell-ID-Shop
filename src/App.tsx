@@ -274,6 +274,38 @@ export default function App() {
     }
   }, [kycUser, userStats.isKycApproved]);
 
+  // Ensure products status is always dynamically synchronized with applications & slips
+  useEffect(() => {
+    setProducts(currProducts => {
+      let changed = false;
+      const updated = currProducts.map(prod => {
+        // Find if there is an approved application for this product
+        const app = applications.find(a => a.productId === prod.id && a.status === 'approved');
+        if (app) {
+          const slipsForApp = slips.filter(s => s.applicationId === app.id && s.status === 'verified');
+          const isBuyout = app.installmentWeeks === 0;
+          const isFullyPaid = isBuyout || (slipsForApp.length >= app.installmentWeeks);
+          const expectedStatus = isFullyPaid ? 'sold' : 'paying';
+          
+          if (prod.status !== expectedStatus) {
+            changed = true;
+            return { ...prod, status: expectedStatus as any };
+          }
+        } else {
+          // If no approved application, check if there's a pending application
+          const hasPendingApp = applications.some(a => a.productId === prod.id && a.status === 'pending');
+          const expectedStatus = hasPendingApp ? 'reserved' : 'available';
+          if ((prod.status === 'paying' || prod.status === 'sold' || prod.status === 'reserved') && prod.status !== expectedStatus) {
+            changed = true;
+            return { ...prod, status: expectedStatus as any };
+          }
+        }
+        return prod;
+      });
+      return changed ? updated : currProducts;
+    });
+  }, [applications, slips]);
+
   // Load and sync user profile/dashboard stats from backend on page load or user state changes
   useEffect(() => {
     const fetchUserDashboardStats = async () => {
@@ -331,6 +363,87 @@ export default function App() {
       }
     };
     syncLocalUsersToBackend();
+  }, []);
+
+  // Real-time synchronization with server-side DB (zero out-of-sync risks)
+  const stateRef = React.useRef({ products, applications, slips });
+  useEffect(() => {
+    stateRef.current = { products, applications, slips };
+  }, [products, applications, slips]);
+
+  useEffect(() => {
+    let active = true;
+
+    const syncDataWithBackend = async () => {
+      try {
+        const currentProducts = stateRef.current.products;
+        const currentApplications = stateRef.current.applications;
+        const currentSlips = stateRef.current.slips;
+
+        // 1. Sync Products
+        const prodSyncRes = await fetch('/api/products/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products: currentProducts })
+        });
+        if (prodSyncRes.ok && active) {
+          const prodData = await prodSyncRes.json();
+          if (prodData.success && prodData.products) {
+            if (JSON.stringify(prodData.products) !== JSON.stringify(currentProducts)) {
+              setProducts(prodData.products);
+            }
+          }
+        }
+
+        // 2. Sync Applications
+        const appRes = await fetch('/api/applications');
+        if (appRes.ok && active) {
+          const appData = await appRes.json();
+          if (appData.applications) {
+            if (appData.applications.length === 0 && currentApplications.length > 0) {
+              await Promise.all(currentApplications.map(app => 
+                fetch('/api/applications', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(app)
+                })
+              ));
+            } else if (JSON.stringify(appData.applications) !== JSON.stringify(currentApplications)) {
+              setApplications(appData.applications);
+            }
+          }
+        }
+
+        // 3. Sync Slips
+        const slipRes = await fetch('/api/slips');
+        if (slipRes.ok && active) {
+          const slipData = await slipRes.json();
+          if (slipData.slips) {
+            if (slipData.slips.length === 0 && currentSlips.length > 0) {
+              await Promise.all(currentSlips.map(slip => 
+                fetch('/api/slips', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(slip)
+                })
+              ));
+            } else if (JSON.stringify(slipData.slips) !== JSON.stringify(currentSlips)) {
+              setSlips(slipData.slips);
+            }
+          }
+        }
+
+      } catch (err) {
+        console.error('Error in real-time data sync with backend:', err);
+      }
+    };
+
+    syncDataWithBackend();
+    const interval = setInterval(syncDataWithBackend, 4000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Robust date parser for app.submittedAt
@@ -507,6 +620,13 @@ export default function App() {
     setAppProduct(null);
     setSelectedProduct(null);
     addLog('success', `รับคำขอยื่นผ่อนไอดีรหัส ${newApp.productCode} สำเร็จโดยคุณ ${newApp.fullName}`);
+
+    // Call backend API immediately to store application
+    fetch('/api/applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newApp)
+    }).catch(err => console.error('Failed to post application to backend:', err));
     
     // Automatically open the payment slip modal to make it user friendly!
     setTimeout(() => {
@@ -527,6 +647,13 @@ export default function App() {
 
     setSlips(prev => [newSlip, ...prev]);
 
+    // Call backend API immediately to store slip
+    fetch('/api/slips', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newSlip)
+    }).catch(err => console.error('Failed to post slip to backend:', err));
+
     // Automatically approve contract if down payment is verified
     if (newSlipRaw.paymentType === 'down') {
       setApplications(prev => prev.map(app => {
@@ -535,6 +662,21 @@ export default function App() {
           
           // Automatically set the product's status to paying or sold
           const isBuyout = app.installmentWeeks === 0;
+
+          // Call product status update immediately on backend
+          fetch('/api/products/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: app.productId, status: isBuyout ? 'sold' : 'paying' })
+          }).catch(err => console.error('Failed to update product status on backend:', err));
+
+          // Also update the application status to approved on backend
+          fetch('/api/applications/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: app.id, status: 'approved' })
+          }).catch(err => console.error('Failed to update application status on backend:', err));
+
           setProducts(currProducts => currProducts.map(p => {
             if (p.id === app.productId) {
               return { 
