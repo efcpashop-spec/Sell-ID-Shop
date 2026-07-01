@@ -198,7 +198,7 @@ export default function ProductCard({ product, onSelect, onApply }: ProductCardP
           src={(product.images && product.images[currentImgIdx]) || 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=800'} 
           alt={product.title} 
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-contain bg-black/90 group-hover:scale-102 transition-transform duration-500"
         />
         
         {/* Carousel buttons */}

@@ -208,12 +208,12 @@ export default function ProductDetailModal({
               </div>
 
               {/* Cover Slide Viewports */}
-              <div className="relative h-56 sm:h-72 rounded-2xl overflow-hidden border border-purple-500/15 bg-slate-950 shadow-md">
+              <div className="relative h-56 sm:h-72 md:h-80 rounded-2xl overflow-hidden border border-purple-500/15 bg-black shadow-md">
                 <img 
                   src={(product.images && product.images[activeImgIdx]) || 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=800'} 
                   alt={product.title} 
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black/90"
                 />
                 
                 {/* Slide navigations overlay */}
@@ -237,7 +237,7 @@ export default function ProductDetailModal({
                 >
                   <ChevronRight className="h-4.5 w-4.5" />
                 </button>
-
+                
                 <div className="absolute top-3.5 right-3.5 bg-[#070314]/90 border border-purple-500/10 px-3 py-1.5 rounded-xl shadow-lg">
                   <span className="text-emerald-400 text-[10px] font-black font-mono">✓ ตรวจรับความปลอดภัย 100%</span>
                 </div>
@@ -249,11 +249,11 @@ export default function ProductDetailModal({
                   <button
                     key={idx}
                     onClick={() => setActiveImgIdx(idx)}
-                    className={`relative w-20 h-13 rounded-xl overflow-hidden border transition-all ${
+                    className={`relative w-20 h-13 flex-shrink-0 rounded-xl overflow-hidden border transition-all ${
                       idx === activeImgIdx ? 'border-purple-500 scale-102 ring-1 ring-purple-500/40' : 'border-slate-900 opacity-55 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                    <img src={img} alt="thumbnail" referrerPolicy="no-referrer" className="w-full h-full object-contain bg-black/80" />
                   </button>
                 ))}
               </div>
